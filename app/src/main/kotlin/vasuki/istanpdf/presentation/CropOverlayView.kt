@@ -60,7 +60,7 @@ class CropOverlayView(context: Context) : View(context) {
     fun cropBitmap(): Bitmap {
         val bmp = bitmap ?: throw IllegalStateException("No image set")
         val inv = Matrix()
-        if (!displayMatrix.invert(inv)) return bmp
+        if (!displayMatrix.invert(inv)) return copyForConsumer(bmp)
         val src = RectF()
         inv.mapRect(src, cropRect)
         val l = src.left.coerceIn(0f, bmp.width.toFloat())
@@ -69,9 +69,14 @@ class CropOverlayView(context: Context) : View(context) {
         val b = src.bottom.coerceIn(0f, bmp.height.toFloat())
         val w = (r - l).toInt()
         val h = (b - t).toInt()
-        if (w <= 0 || h <= 0) return bmp
-        return Bitmap.createBitmap(bmp, l.toInt(), t.toInt(), w, h)
+        if (w <= 0 || h <= 0) return copyForConsumer(bmp)
+        val sub = Bitmap.createBitmap(bmp, l.toInt(), t.toInt(), w, h)
+        return if (sub === bmp) copyForConsumer(bmp) else sub
     }
+
+    private fun copyForConsumer(src: Bitmap): Bitmap =
+        src.copy(src.config ?: Bitmap.Config.ARGB_8888, false)
+            ?: throw IllegalStateException("Could not copy crop")
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)

@@ -540,7 +540,10 @@ class EditorViewBuilder(
             val rotateLeft: ImageView,
             val rotateRight: ImageView,
             val crossBtn: ImageView?
-        ) : RecyclerView.ViewHolder(itemView)
+        ) : RecyclerView.ViewHolder(itemView) {
+            var boundItem: PageItem? = null
+            var bindGeneration: Int = 0
+        }
 
         override fun getItemCount(): Int = actions.getPages().size
 
@@ -720,13 +723,18 @@ class EditorViewBuilder(
         override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
             val pages = actions.getPages()
             val item = pages[position]
+            val generation = ++holder.bindGeneration
+            holder.boundItem = item
+            val expectedKey = item.cacheKey
             val cached = actions.getThumbnail(item)
             if (cached != null) {
                 holder.preview.setImageBitmap(cached)
             } else {
                 holder.preview.setImageBitmap(null)
                 actions.requestThumbnail(item) { bmp ->
-                    if (holder.bindingAdapterPosition == position) {
+                    if (holder.boundItem === item &&
+                        holder.bindGeneration == generation &&
+                        item.cacheKey == expectedKey) {
                         holder.preview.setImageBitmap(bmp)
                     }
                 }
@@ -800,14 +808,14 @@ class EditorViewBuilder(
 
             holder.rotateLeft.setOnClickListener {
                 actions.rotatePage(item, -90) { bmp, _ ->
-                    if (holder.bindingAdapterPosition == position) {
+                    if (holder.boundItem === item && holder.bindGeneration == generation) {
                         holder.preview.setImageBitmap(bmp)
                     }
                 }
             }
             holder.rotateRight.setOnClickListener {
                 actions.rotatePage(item, 90) { bmp, _ ->
-                    if (holder.bindingAdapterPosition == position) {
+                    if (holder.boundItem === item && holder.bindGeneration == generation) {
                         holder.preview.setImageBitmap(bmp)
                     }
                 }
@@ -1007,7 +1015,10 @@ class EditorViewBuilder(
             inner class PreviewVH(
                 val container: FrameLayout,
                 val image: ZoomableImageView
-            ) : RecyclerView.ViewHolder(container)
+            ) : RecyclerView.ViewHolder(container) {
+                var boundItem: PageItem? = null
+                var bindGeneration: Int = 0
+            }
 
             override fun getItemCount(): Int = pages.size
 
@@ -1031,6 +1042,9 @@ class EditorViewBuilder(
 
             override fun onBindViewHolder(holder: PreviewVH, position: Int) {
                 val p = pages[position]
+                val generation = ++holder.bindGeneration
+                holder.boundItem = p
+                val expectedKey = p.cacheKey
                 var fullApplied = false
 
                 val full = actions.getFullRes(p)
@@ -1045,14 +1059,19 @@ class EditorViewBuilder(
                 } else {
                     holder.image.setImageBitmapAndReset(null)
                     actions.requestThumbnail(p) { bmp ->
-                        if (!fullApplied && holder.bindingAdapterPosition == position) {
+                        if (!fullApplied &&
+                            holder.boundItem === p &&
+                            holder.bindGeneration == generation &&
+                            p.cacheKey == expectedKey) {
                             holder.image.setImageBitmapAndReset(bmp)
                         }
                     }
                 }
 
                 actions.requestFullRes(p) { bmp ->
-                    if (holder.bindingAdapterPosition == position) {
+                    if (holder.boundItem === p &&
+                        holder.bindGeneration == generation &&
+                        p.cacheKey == expectedKey) {
                         fullApplied = true
                         holder.image.upgradeBitmap(bmp)
                     }

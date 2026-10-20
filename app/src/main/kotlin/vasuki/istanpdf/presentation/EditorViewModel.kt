@@ -27,11 +27,14 @@ class EditorViewModel : ViewModel() {
     }
 
     val rendersInFlight: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
+    val renderWaiters: MutableMap<String, MutableList<(Bitmap) -> Unit>> =
+        Collections.synchronizedMap(mutableMapOf())
 
     fun clearPages() {
         thumbCache.evictAll()
         fullResCache.evictAll()
         rendersInFlight.clear()
+        renderWaiters.clear()
         pages.clear()
     }
 

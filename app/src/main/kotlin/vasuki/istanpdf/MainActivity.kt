@@ -1473,21 +1473,35 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyPageCrop(page: PageItem, cropped: Bitmap, onDone: Runnable? = null) {
+        val previewWidth = screenWidth()
         worker.execute {
             try {
+                val oldKey = page.cacheKey
                 val file = File(cacheDir, "crop_${System.currentTimeMillis()}.jpg")
                 FileOutputStream(file).use { out ->
                     cropped.compress(Bitmap.CompressFormat.JPEG, 92, out)
                 }
                 page.replacementFile = file
                 page.rotation = 0
+                val newKey = page.cacheKey
 
                 val thumb = BitmapUtils.scaleToFit(cropped, dp(280))
+                val fullRes = if (maxOf(cropped.width, cropped.height) <= previewWidth) {
+                    cropped.copy(cropped.config ?: Bitmap.Config.ARGB_8888, false)
+                        ?: throw IllegalStateException("Could not prepare preview")
+                } else {
+                    BitmapUtils.scaleToFit(cropped, previewWidth)
+                }
                 if (thumb !== cropped && !cropped.isRecycled) cropped.recycle()
                 val finalThumb = thumb
+                val finalFullRes = fullRes
                 runOnUiThread {
-                    editorViewModel.thumbCache.put(page.cacheKey, finalThumb)
-                    editorViewModel.fullResCache.remove(page.cacheKey)
+                    if (oldKey != newKey) {
+                        editorViewModel.thumbCache.remove(oldKey)
+                        editorViewModel.fullResCache.remove(oldKey)
+                    }
+                    editorViewModel.thumbCache.put(newKey, finalThumb)
+                    editorViewModel.fullResCache.put(newKey, finalFullRes)
                     pageList?.adapter?.notifyDataSetChanged()
                     onDone?.run()
                 }
@@ -1814,21 +1828,31 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val inFlightKey = "req_${cacheKey}_$targetWidth"
-        if (!editorViewModel.rendersInFlight.add(inFlightKey)) return
+        val shouldStart = synchronized(editorViewModel.renderWaiters) {
+            if (editorViewModel.rendersInFlight.add(inFlightKey)) {
+                editorViewModel.renderWaiters[inFlightKey] = mutableListOf(onReady)
+                true
+            } else {
+                editorViewModel.renderWaiters.getOrPut(inFlightKey) { mutableListOf() }.add(onReady)
+                false
+            }
+        }
+        if (!shouldStart) return
         executor.submit {
-            try {
-                val bmp = renderBitmap(item, targetWidth)
-                if (bmp != null) {
-                    runOnUiThread {
-                        editorViewModel.rendersInFlight.remove(inFlightKey)
-                        cache.put(cacheKey, bmp)
-                        onReady(bmp)
-                    }
-                } else {
-                    editorViewModel.rendersInFlight.remove(inFlightKey)
-                }
+            val bmp = try {
+                renderBitmap(item, targetWidth)
             } catch (_: Exception) {
+                null
+            }
+            runOnUiThread {
                 editorViewModel.rendersInFlight.remove(inFlightKey)
+                val waiters = synchronized(editorViewModel.renderWaiters) {
+                    editorViewModel.renderWaiters.remove(inFlightKey)
+                } ?: emptyList()
+                if (bmp != null) {
+                    cache.put(cacheKey, bmp)
+                    waiters.forEach { it(bmp) }
+                }
             }
         }
     }
