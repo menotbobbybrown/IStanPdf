@@ -3,6 +3,7 @@ package vasuki.istanpdf
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -2616,14 +2617,58 @@ class MainActivity : AppCompatActivity() {
                     onComplete?.run()
                 }, tintIcon = false, customIcon = kofiIcon, iconWidthDp = 30, iconHeightDp = 24),
                 BottomSheetItem("UPI (India)", R.drawable.upi_pay_24px, Runnable {
-                    try {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("upi://pay?pa=ramakanthacharya@axl&pn=Ramakanth")))
-                    } catch (e: Exception) {
-                        Toast.makeText(this@MainActivity, "No UPI app found", Toast.LENGTH_SHORT).show()
-                    }
-                    onComplete?.run()
+                    handleUpiDonation(onComplete)
                 })
             )
+        )
+    }
+
+    private fun handleUpiDonation(onComplete: Runnable?) {
+        val upiId = "ramakanthacharya@axl"
+        val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("UPI ID", upiId))
+        if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.S_V2) {
+            Toast.makeText(this, "UPI ID copied: $upiId", Toast.LENGTH_SHORT).show()
+        }
+        onComplete?.run()
+
+        val probe = Intent(Intent.ACTION_VIEW, Uri.parse("upi://pay"))
+        val pm = packageManager
+        val apps = pm.queryIntentActivities(probe, PackageManager.MATCH_DEFAULT_ONLY)
+            .distinctBy { it.activityInfo.packageName }
+            .filter { it.activityInfo.packageName != packageName }
+            .mapNotNull { info ->
+                val pkg = info.activityInfo.packageName
+                val launchIntent = pm.getLaunchIntentForPackage(pkg) ?: return@mapNotNull null
+                Triple(info.loadLabel(pm).toString(), launchIntent, info.loadIcon(pm))
+            }
+            .sortedBy { it.first.lowercase() }
+
+        if (apps.isEmpty()) {
+            val message =
+                if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.S_V2) {
+                    "No UPI app found. UPI ID copied."
+                } else {
+                    "No UPI app found."
+                }
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        showBottomSheetMenu(
+            "Open UPI App",
+            apps.map { (label, launchIntent, icon) ->
+                val iconView = ImageView(this)
+                iconView.setImageDrawable(icon)
+                iconView.scaleType = ImageView.ScaleType.FIT_CENTER
+                BottomSheetItem(label, 0, Runnable {
+                    try {
+                        startActivity(launchIntent)
+                    } catch (e: Exception) {
+                        Toast.makeText(this@MainActivity, "Could not open $label", Toast.LENGTH_SHORT).show()
+                    }
+                }, tintIcon = false, customIcon = iconView)
+            }
         )
     }
 
