@@ -1164,7 +1164,7 @@ class MainActivity : AppCompatActivity() {
         bottomSheetDialog.show()
 
         val bottomSheet = bottomSheetDialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
-        bottomSheet?.backgroundTintList = android.content.res.ColorStateList.valueOf(color(R.color.istan_surface))
+        bottomSheet?.backgroundTintList = android.content.res.ColorStateList.valueOf(color(R.color.istan_sheet))
         bottomSheet?.let { applyBottomSheetSystemBarTheme(bottomSheetDialog, it) }
     }
 
@@ -1174,7 +1174,7 @@ class MainActivity : AppCompatActivity() {
     ) {
         val dialogWindow = bottomSheetDialog.window ?: return
         dialogWindow.addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-        dialogWindow.navigationBarColor = color(R.color.istan_surface)
+        dialogWindow.navigationBarColor = color(R.color.istan_sheet)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             dialogWindow.isNavigationBarContrastEnforced = false
         }

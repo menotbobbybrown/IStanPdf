@@ -172,6 +172,7 @@ object ThemePrefs {
             R.color.istan_background -> if (amoled) Color.BLACK else Color.parseColor("#FAFAFA")
             R.color.istan_surface -> if (amoled) Color.parseColor("#101010") else tint(accent.base, Color.WHITE, 0.90f)
             R.color.istan_surface_high -> if (amoled) Color.parseColor("#1A1A1A") else tint(accent.base, Color.WHITE, 0.80f)
+            R.color.istan_sheet -> if (amoled) Color.parseColor("#161616") else tint(accent.base, Color.WHITE, 0.90f)
             R.color.istan_text -> if (amoled) Color.WHITE else Color.parseColor("#1C1C1C")
             R.color.istan_text_muted -> if (amoled) Color.parseColor("#B9B9B9") else Color.parseColor("#505548")
             R.color.istan_outline -> if (amoled) Color.parseColor("#333333") else tint(accent.dark, Color.WHITE, 0.62f)
