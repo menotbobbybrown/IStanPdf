@@ -24,6 +24,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.card.MaterialCardView
 import vasuki.istanpdf.R
 import vasuki.istanpdf.ThemePrefs
+import vasuki.istanpdf.model.NormalizeTarget
 import vasuki.istanpdf.model.PageItem
 
 class EditorViewBuilder(
@@ -46,6 +47,9 @@ class EditorViewBuilder(
         fun getFullRes(item: PageItem): Bitmap?
         fun requestFullRes(item: PageItem, onReady: (Bitmap) -> Unit)
         fun rotatePage(item: PageItem, degrees: Int, onReady: (thumb: Bitmap, fullRes: Bitmap?) -> Unit)
+        fun getNormalization(): NormalizeTarget
+        fun setNormalization(target: NormalizeTarget)
+        fun pickNormalization(current: NormalizeTarget, onPicked: (NormalizeTarget) -> Unit)
     }
 
     companion object {
@@ -121,6 +125,64 @@ class EditorViewBuilder(
         val scParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         scParams.setMargins(0, 0, 0, dp(12))
         header.addView(statusCard, scParams)
+
+        val showNormalization = !docxExport && (
+            titleText == "Images to PDF" ||
+                titleText == "Reorder Pages" ||
+                titleText == "Modify PDF"
+            )
+        if (showNormalization) {
+            val normalizeRow = LinearLayout(activity)
+            normalizeRow.orientation = LinearLayout.HORIZONTAL
+            normalizeRow.gravity = Gravity.CENTER_VERTICAL
+
+            val normalizeChip = MaterialCardView(activity)
+            normalizeChip.setCardBackgroundColor(color(R.color.istan_surface))
+            normalizeChip.radius = dp(28).toFloat()
+            normalizeChip.strokeWidth = dp(1)
+            normalizeChip.strokeColor = color(R.color.istan_outline)
+            normalizeChip.cardElevation = 0f
+            normalizeChip.setRippleColorResource(android.R.color.transparent)
+
+            val chipRow = LinearLayout(activity)
+            chipRow.orientation = LinearLayout.HORIZONTAL
+            chipRow.gravity = Gravity.CENTER_VERTICAL
+            chipRow.setPadding(dp(14), dp(8), dp(10), dp(8))
+            normalizeChip.addView(chipRow)
+
+            val normalizeLabel = text("Normalize: ${actions.getNormalization().label}", 14, R.color.istan_text, false)
+            chipRow.addView(normalizeLabel)
+
+            val chevron = ImageView(activity)
+            chevron.setImageResource(R.drawable.chevron_right_24px)
+            chevron.setColorFilter(color(R.color.istan_text_muted))
+            chevron.rotation = 90f
+            val chevronLp = LinearLayout.LayoutParams(dp(18), dp(18))
+            chevronLp.marginStart = dp(6)
+            chipRow.addView(chevron, chevronLp)
+
+            normalizeChip.setOnClickListener {
+                actions.pickNormalization(actions.getNormalization()) { target ->
+                    actions.setNormalization(target)
+                    normalizeLabel.text = "Normalize: ${target.label}"
+                }
+            }
+
+            normalizeRow.addView(
+                normalizeChip,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            )
+
+            val normalizeLp = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            normalizeLp.setMargins(0, 0, 0, dp(12))
+            header.addView(normalizeRow, normalizeLp)
+        }
 
         val recycler = RecyclerView(activity)
         recycler.layoutManager = LinearLayoutManager(activity)

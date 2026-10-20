@@ -12,13 +12,18 @@ import com.itextpdf.kernel.pdf.PdfNumber
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas
+import vasuki.istanpdf.model.NormalizeTarget
 import vasuki.istanpdf.model.PageItem
 import vasuki.istanpdf.util.ContentFiles
 import java.io.File
 
 object PdfReorder {
     private fun reorderInternal(
-        ctx: Context, src: Uri, pages: List<PageItem>, dst: Uri
+        ctx: Context,
+        src: Uri,
+        pages: List<PageItem>,
+        dst: Uri,
+        normalize: NormalizeTarget
     ): Int {
         require(pages.any { it.keep }) { "Keep at least one page" }
         var kept = 0
@@ -51,6 +56,7 @@ object PdfReorder {
                                 dstPage.put(PdfName.Rotate, PdfNumber(r))
                             }
                         }
+                        PdfPageNormalizer.normalize(dstDoc, normalize)
                     } finally {
                         dstDoc.close()
                     }
@@ -65,13 +71,19 @@ object PdfReorder {
     }
 
     @Throws(Exception::class)
-    fun run(ctx: Context, src: Uri, pages: List<PageItem>, dst: Uri): Int {
-        return reorderInternal(ctx, src, pages, dst)
+    fun run(
+        ctx: Context,
+        src: Uri,
+        pages: List<PageItem>,
+        dst: Uri,
+        normalize: NormalizeTarget = NormalizeTarget.NONE
+    ): Int {
+        return reorderInternal(ctx, src, pages, dst, normalize)
     }
 
     @Throws(Exception::class)
     fun replacePages(ctx: Context, src: Uri, pages: List<PageItem>, dst: Uri) {
-        reorderInternal(ctx, src, pages, dst)
+        reorderInternal(ctx, src, pages, dst, NormalizeTarget.NONE)
     }
 
     private fun addImagePage(dstDoc: PdfDocument, file: File) {

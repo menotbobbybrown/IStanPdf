@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.util.LruCache
 import androidx.lifecycle.ViewModel
+import vasuki.istanpdf.model.NormalizeTarget
 import vasuki.istanpdf.model.PageItem
 import java.io.File
 import java.util.Collections
@@ -17,6 +18,7 @@ class EditorViewModel : ViewModel() {
     var reorderSource: Uri? = null
     var originalFileName: String? = null
     var pagesAdded: Boolean = false
+    var normalizeTarget: NormalizeTarget = NormalizeTarget.NONE
 
     val thumbCache = object : LruCache<String, Bitmap>(maxCacheBytes(8)) {
         override fun sizeOf(key: String, value: Bitmap) = value.byteCount
@@ -55,6 +57,7 @@ class EditorViewModel : ViewModel() {
         reorderSource = null
         originalFileName = null
         pagesAdded = false
+        normalizeTarget = NormalizeTarget.NONE
         cleanupTempFiles()
     }
 

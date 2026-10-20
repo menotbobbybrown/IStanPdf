@@ -38,6 +38,7 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.snackbar.Snackbar
 import vasuki.istanpdf.data.PdfEngine
 import vasuki.istanpdf.di.AppModule
+import vasuki.istanpdf.model.NormalizeTarget
 import vasuki.istanpdf.model.PageItem
 import vasuki.istanpdf.presentation.CropOverlayView
 import vasuki.istanpdf.presentation.EditorViewBuilder
@@ -810,7 +811,10 @@ class MainActivity : AppCompatActivity() {
             runJob("Merging PDFs...", OutputRef(destination, MIME_PDF, getDisplayName(destination))) { AppModule.get().mergePdf.execute(ArrayList(pendingUris), rotations, destination) }
         } else if (requestCode == REQ_SAVE_IMAGES_TO_PDF) {
             val snapshot = ArrayList(pages)
-            runJob("Converting Images...", OutputRef(destination, MIME_PDF, getDisplayName(destination))) { AppModule.get().imagesToPdf.execute(ArrayList(pendingUris), snapshot, destination) }
+            val normalize = editorViewModel.normalizeTarget
+            runJob("Converting Images...", OutputRef(destination, MIME_PDF, getDisplayName(destination))) {
+                AppModule.get().imagesToPdf.execute(ArrayList(pendingUris), snapshot, destination, normalize)
+            }
         } else if (requestCode == REQ_SAVE_PDF_TO_JPG) {
             runJob("Converting to JPG...", OutputRef(destination, MIME_JPEG, getDisplayName(destination))) { AppModule.get().pdfToJpeg.executeSingle(pendingUris[0], destination, pdfToImageDpi) }
         } else if (requestCode == REQ_SAVE_PDF_TO_JPG_ZIP) {
@@ -858,6 +862,7 @@ class MainActivity : AppCompatActivity() {
         } else if (requestCode == REQ_SAVE_REORDER_PDF || requestCode == REQ_SAVE_REORDER_DOCX_EXPORT) {
             val source = editorViewModel.reorderSource ?: return
             val snapshot = ArrayList(pages)
+            val normalize = editorViewModel.normalizeTarget
             val isDocx = (requestCode == REQ_SAVE_REORDER_DOCX_EXPORT)
 
             var removed = false
@@ -900,7 +905,7 @@ class MainActivity : AppCompatActivity() {
                         AppModule.get().saveDocx.execute(source, snapshot, destination)
                     }
                 } else {
-                    AppModule.get().reorderPdf.execute(source, snapshot, destination)
+                    AppModule.get().reorderPdf.execute(source, snapshot, destination, normalize)
                 }
             }
         }
@@ -1008,6 +1013,32 @@ class MainActivity : AppCompatActivity() {
                     requestThumbnail(item) { bmp -> onReady(bmp, newFull) }
                 }
             }
+            override fun getNormalization(): NormalizeTarget = editorViewModel.normalizeTarget
+            override fun setNormalization(target: NormalizeTarget) {
+                editorViewModel.normalizeTarget = target
+            }
+            override fun pickNormalization(current: NormalizeTarget, onPicked: (NormalizeTarget) -> Unit) {
+                val options = mutableListOf<BottomSheetItem>()
+                options.add(
+                    BottomSheetItem(
+                        "Off",
+                        if (current == NormalizeTarget.NONE) R.drawable.check_24px else 0,
+                        Runnable { onPicked(NormalizeTarget.NONE) },
+                        tintIcon = current == NormalizeTarget.NONE
+                    )
+                )
+                for (target in NormalizeTarget.presets) {
+                    options.add(
+                        BottomSheetItem(
+                            "${target.label}  ·  ${target.detail}",
+                            if (current == target) R.drawable.check_24px else 0,
+                            Runnable { onPicked(target) },
+                            tintIcon = current == target
+                        )
+                    )
+                }
+                showBottomSheetMenu("Normalize Pages", options)
+            }
         })
         status = builder.status
         statusIndicator = builder.statusIndicator
@@ -1018,6 +1049,7 @@ class MainActivity : AppCompatActivity() {
     private fun handleSave(titleText: String, docxExport: Boolean) {
         val pages = editorViewModel.pages
         val pendingUris = editorViewModel.pendingUris
+        val normalized = !docxExport && editorViewModel.normalizeTarget.isEnabled
 
         var removed = false
         var keepCount = 0
@@ -1068,7 +1100,7 @@ class MainActivity : AppCompatActivity() {
         val pagesAdded = editorViewModel.pagesAdded
 
         if ("Images to PDF" == titleText) {
-        } else if (!removed && !reordered && !rotated && !pagesAdded && !cropped) {
+        } else if (!removed && !reordered && !rotated && !pagesAdded && !cropped && !normalized) {
             status?.text = "No changes to save."
             return
         }
@@ -1079,6 +1111,7 @@ class MainActivity : AppCompatActivity() {
         if (rotated) changedCount++
         if (pagesAdded) changedCount++
         if (cropped) changedCount++
+        if (normalized) changedCount++
 
         val suffix = when {
             changedCount > 1 -> "_modified"
@@ -1087,6 +1120,7 @@ class MainActivity : AppCompatActivity() {
             removed -> "_removed"
             rotated -> "_rotated"
             cropped -> "_cropped"
+            normalized -> "_normalized"
             else -> ""
         }
 
