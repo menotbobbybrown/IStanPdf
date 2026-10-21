@@ -76,6 +76,8 @@ class MainActivity : AppCompatActivity() {
     private var dismissOverlayRunnable: Runnable? = null
     private var status: TextView? = null
     private var statusIndicator: ImageView? = null
+    private var statusCard: View? = null
+    private var statusHideRunnable: Runnable? = null
     private var isHome = true
     private var activeReq = 0
     private var themeToken: String? = null
@@ -499,7 +501,7 @@ class MainActivity : AppCompatActivity() {
                     for (p in pages) p.keep = true
                     buildPageEditor("Merge PDF", "Merge PDF", false, true)
                     if (skipped > 0) Toast.makeText(this@MainActivity, "$skipped PDF(s) could not be loaded", Toast.LENGTH_SHORT).show()
-                    status?.text = "Ready"
+                    setBusy(false, WAITING_TEXT)
                 }
             }
             return
@@ -578,6 +580,7 @@ class MainActivity : AppCompatActivity() {
 
             setStatusIndicatorColor(color(R.color.istan_olive))
             status?.text = "Loading PDFs..."
+            showStatusCard(false)
             worker.execute {
                 val rendered = mutableListOf<PageItem>()
                 var startIndex = pages.size
@@ -598,7 +601,7 @@ class MainActivity : AppCompatActivity() {
                     editorViewModel.pagesAdded = true
                     pageList?.adapter?.notifyDataSetChanged()
                     if (skipped > 0) Toast.makeText(this@MainActivity, "$skipped PDF(s) could not be loaded", Toast.LENGTH_SHORT).show()
-                    status?.text = "Ready"
+                    setBusy(false, WAITING_TEXT)
                 }
             }
             return
@@ -948,8 +951,10 @@ class MainActivity : AppCompatActivity() {
             override fun onSupportDeveloper() { showDonationPicker(null) }
             override fun onOpenSettings() { startActivity(Intent(this@MainActivity, SettingsActivity::class.java)) }
         })
+        cancelStatusHide()
         status = builder.status
         statusIndicator = builder.statusIndicator
+        statusCard = null
         setViewWithLoading(homeView)
     }
 
@@ -1040,8 +1045,10 @@ class MainActivity : AppCompatActivity() {
                 showBottomSheetMenu("Normalize Pages", options)
             }
         })
+        cancelStatusHide()
         status = builder.status
         statusIndicator = builder.statusIndicator
+        statusCard = builder.statusCard
         pageList = builder.pageList
         setViewWithLoading(editorView)
     }
@@ -1101,7 +1108,7 @@ class MainActivity : AppCompatActivity() {
 
         if ("Images to PDF" == titleText) {
         } else if (!removed && !reordered && !rotated && !pagesAdded && !cropped && !normalized) {
-            status?.text = "No changes to save."
+            setBusy(false, "No changes to save.")
             return
         }
 
@@ -1655,8 +1662,7 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         pageList?.adapter?.notifyDataSetChanged()
                     }
-                    status?.text = "Ready"
-                    setStatusIndicatorColor(color(R.color.istan_olive))
+                    setBusy(false, WAITING_TEXT)
                 }
             } catch (e: Exception) {
                 runOnUiThread { showError(e) }
@@ -2212,6 +2218,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun cancelStatusHide() {
+        statusHideRunnable?.let { fakeProgressHandler.removeCallbacks(it) }
+        statusHideRunnable = null
+    }
+
+    private fun showStatusCard(autoHide: Boolean) {
+        cancelStatusHide()
+        val card = statusCard ?: return
+        card.visibility = View.VISIBLE
+        if (!autoHide) return
+        val runnable = object : Runnable {
+            override fun run() {
+                if (statusCard === card) card.visibility = View.GONE
+                if (statusHideRunnable === this) statusHideRunnable = null
+            }
+        }
+        statusHideRunnable = runnable
+        fakeProgressHandler.postDelayed(runnable, 3000L)
+    }
+
+    private fun hideStatusCard() {
+        cancelStatusHide()
+        statusCard?.visibility = View.GONE
+    }
+
     private fun setStatusIndicatorColor(color: Int) {
         val drawable = statusIndicator?.drawable
         if (drawable is android.graphics.drawable.GradientDrawable) {
@@ -2221,14 +2252,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun showError(exception: Exception) {
         if (exception is InterruptedException || "Cancelled by user" == exception.message) {
-            runOnUiThread { setBusy(false, "Ready") }
+            runOnUiThread { setBusy(false, WAITING_TEXT) }
             return
         }
         android.util.Log.e("IStanPdf", "Operation failed", exception)
         runOnUiThread {
+            cancelStatusHide()
+            dismissOverlayRunnable?.let { fakeProgressHandler.removeCallbacks(it) }
+            dismissOverlayRunnable = null
+            fakeProgressRunnable?.let { fakeProgressHandler.removeCallbacks(it) }
+            fakeProgressRunnable = null
             loadingOverlay?.visibility = View.GONE
+            pageList?.suppressLayout(false)
             val message = exception.message ?: exception.javaClass.simpleName
             if (status != null) {
+                statusCard?.visibility = View.VISIBLE
                 setStatusIndicatorColor(Color.RED)
                 status!!.text = message
             }
@@ -2436,6 +2474,14 @@ class MainActivity : AppCompatActivity() {
                 }
                 pageList?.suppressLayout(false)
             }
+        }
+
+        if (busy) {
+            showStatusCard(false)
+        } else if (message == WAITING_TEXT) {
+            hideStatusCard()
+        } else {
+            showStatusCard(true)
         }
     }
 

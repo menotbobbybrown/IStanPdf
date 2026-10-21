@@ -60,6 +60,8 @@ class EditorViewBuilder(
         private set
     var statusIndicator: ImageView? = null
         private set
+    var statusCard: View? = null
+        private set
     var pageList: RecyclerView? = null
         private set
 
@@ -125,6 +127,8 @@ class EditorViewBuilder(
         val scParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         scParams.setMargins(0, 0, 0, dp(12))
         header.addView(statusCard, scParams)
+        statusCard.visibility = View.GONE
+        this.statusCard = statusCard
 
         val showNormalization = !docxExport && (
             titleText == "Images to PDF" ||
