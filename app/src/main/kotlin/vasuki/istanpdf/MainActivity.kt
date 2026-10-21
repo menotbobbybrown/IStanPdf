@@ -967,11 +967,7 @@ class MainActivity : AppCompatActivity() {
         val editorView = builder.build(titleText, saveLabelText, docxExport, allowReorder, object : EditorViewBuilder.EditorActions {
             override fun onBack() { buildHome() }
             override fun onSave(title: String, isDocx: Boolean) { handleSave(title, isDocx) }
-            override fun onAddItems(title: String) { handleAddItems(title) }
-            override fun onTakePhoto() {
-                if (currentEditorTitle != "Images to PDF") cameraMergeToPdf = true
-                launchCameraForCapture()
-            }
+            override fun onAddItems(title: String) { onEditorAddRequested(title) }
             override fun onCropPage(position: Int, onCropped: Runnable?) { cropEditorPage(position, onCropped) }
             override fun onShowCustomDialog(title: String, content: View, negStr: String?, negAction: Runnable?, posStr: String?, posAction: Runnable?) {
                 showCustomDialog(title, content, negStr, negAction, posStr, posAction)
@@ -1140,6 +1136,25 @@ class MainActivity : AppCompatActivity() {
             }
             else -> createDocument(MIME_PDF, "$prefix$suffix.pdf", REQ_SAVE_REORDER_PDF)
         }
+    }
+
+    private fun onEditorAddRequested(titleText: String) {
+        if (titleText == "Merge PDF") {
+            handleAddItems(titleText)
+            return
+        }
+        showBottomSheetMenu(
+            "Choose",
+            listOf(
+                BottomSheetItem("From Gallery", R.drawable.image_24px, Runnable {
+                    handleAddItems(titleText)
+                }),
+                BottomSheetItem("Take Photo", R.drawable.photo_camera_24px, Runnable {
+                    cameraMergeToPdf = titleText != "Images to PDF"
+                    launchCameraForCapture()
+                })
+            )
+        )
     }
 
     private fun handleAddItems(titleText: String) {

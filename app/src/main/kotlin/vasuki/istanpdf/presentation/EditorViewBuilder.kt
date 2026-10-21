@@ -35,7 +35,6 @@ class EditorViewBuilder(
         fun onBack()
         fun onSave(titleText: String, docxExport: Boolean)
         fun onAddItems(titleText: String)
-        fun onTakePhoto()
         fun onCropPage(position: Int, onCropped: Runnable?)
         fun onShowCustomDialog(title: String, content: View, negativeStr: String?, negativeAction: Runnable?, positiveStr: String?, positiveAction: Runnable?)
         fun toast(message: String)
@@ -427,68 +426,46 @@ class EditorViewBuilder(
         }
 
         if (titleText == "Images to PDF" || titleText == "Reorder Pages" || titleText == "Modify PDF" || titleText == "Merge PDF") {
-            if (titleText == "Images to PDF" || titleText == "Reorder Pages" || titleText == "Modify PDF") {
-                val row = LinearLayout(activity)
-                row.orientation = LinearLayout.HORIZONTAL
-                val rowLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-                rowLp.setMargins(0, 0, 0, dp(12))
-                footer.addView(row, 0, rowLp)
+            val addCard = MaterialCardView(activity)
+            addCard.radius = dp(28).toFloat()
+            addCard.cardElevation = 0f
 
-                var addLabel = "Add Images / PDF"
-                if (titleText == "Reorder Pages") addLabel = "Add DOCX / PDF"
+            val dashBg = GradientDrawable()
+            dashBg.setColor(color(R.color.istan_surface))
+            dashBg.cornerRadius = dp(28).toFloat()
+            dashBg.setStroke(dp(1), color(R.color.istan_outline), dp(4).toFloat(), dp(4).toFloat())
+            addCard.background = dashBg
 
-                row.addView(
-                    buildSourceCard(R.drawable.add_24px, addLabel, 8) { actions.onAddItems(titleText) },
-                    LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
-                )
+            val addRow = LinearLayout(activity)
+            addRow.orientation = LinearLayout.HORIZONTAL
+            addRow.gravity = Gravity.CENTER
+            addRow.setPadding(dp(16), dp(12), dp(16), dp(12))
+            addCard.addView(addRow)
 
-                val camLp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
-                camLp.setMargins(dp(8), 0, 0, 0)
-                row.addView(
-                    buildSourceCard(R.drawable.camera_24px, "Take Photo") { actions.onTakePhoto() },
-                    camLp
-                )
-            } else {
-                val addCard = MaterialCardView(activity)
-                addCard.setCardBackgroundColor(color(R.color.istan_surface))
-                addCard.radius = dp(28).toFloat()
-                addCard.cardElevation = 0f
+            val circleBg = GradientDrawable()
+            circleBg.shape = GradientDrawable.OVAL
+            circleBg.setColor(color(R.color.istan_olive))
 
-                val dashBg = GradientDrawable()
-                dashBg.setColor(Color.TRANSPARENT)
-                dashBg.cornerRadius = dp(28).toFloat()
-                dashBg.setStroke(dp(1), color(R.color.istan_outline), dp(4).toFloat(), dp(4).toFloat())
-                addCard.background = dashBg
+            val plusText = text("+", 20, R.color.istan_text, false)
+            plusText.setTextColor(Color.WHITE)
+            plusText.gravity = Gravity.CENTER
+            plusText.background = circleBg
+            addRow.addView(plusText, LinearLayout.LayoutParams(dp(28), dp(28)))
 
-                val addRow = LinearLayout(activity)
-                addRow.orientation = LinearLayout.HORIZONTAL
-                addRow.gravity = Gravity.CENTER
-                addRow.setPadding(dp(16), dp(12), dp(16), dp(12))
-                addCard.addView(addRow)
-
-                val circleBg = GradientDrawable()
-                circleBg.shape = GradientDrawable.OVAL
-                circleBg.setColor(color(R.color.istan_olive))
-
-                val plusText = text("+", 20, R.color.istan_text, false)
-                plusText.setTextColor(Color.WHITE)
-                plusText.gravity = Gravity.CENTER
-                plusText.background = circleBg
-                addRow.addView(plusText, LinearLayout.LayoutParams(dp(28), dp(28)))
-
-                var labelStr = "Tap to Add Images / PDF"
-                if (titleText == "Reorder Pages") labelStr = "Tap to Add Images / DOCX / PDF"
-                else if (titleText == "Merge PDF") labelStr = "Tap to Add PDF"
-                val addTitle = text(labelStr, 15, R.color.istan_text, false)
-                addTitle.setPadding(dp(12), 0, 0, 0)
-                addRow.addView(addTitle)
-
-                addCard.setOnClickListener { actions.onAddItems(titleText) }
-
-                val acLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-                acLp.setMargins(0, 0, 0, dp(12))
-                footer.addView(addCard, 0, acLp)
+            val labelStr = when (titleText) {
+                "Reorder Pages" -> "Add DOCX / PDF"
+                "Merge PDF" -> "Tap to Add PDF"
+                else -> "Add Images / PDF"
             }
+            val addTitle = text(labelStr, 15, R.color.istan_text, false)
+            addTitle.setPadding(dp(12), 0, 0, 0)
+            addRow.addView(addTitle)
+
+            addCard.setOnClickListener { actions.onAddItems(titleText) }
+
+            val acLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            acLp.setMargins(0, 0, 0, dp(12))
+            footer.addView(addCard, 0, acLp)
         }
 
         val save = actionButton(saveLabelText, true) { actions.onSave(titleText, docxExport) }
@@ -514,45 +491,6 @@ class EditorViewBuilder(
     private fun color(colorRes: Int): Int = ThemePrefs.resolveColor(activity, colorRes)
 
     private fun dp(value: Int): Int = Math.round(value * activity.resources.displayMetrics.density)
-
-    private fun buildSourceCard(iconResId: Int, label: String, iconInsetDp: Int = 5, action: () -> Unit): View {
-        val card = MaterialCardView(activity)
-        card.setCardBackgroundColor(color(R.color.istan_surface))
-        card.radius = dp(28).toFloat()
-        card.cardElevation = 0f
-
-        val dashBg = GradientDrawable()
-        dashBg.setColor(Color.TRANSPARENT)
-        dashBg.cornerRadius = dp(28).toFloat()
-        dashBg.setStroke(dp(1), color(R.color.istan_outline), dp(4).toFloat(), dp(4).toFloat())
-        card.background = dashBg
-
-        val col = LinearLayout(activity)
-        col.orientation = LinearLayout.VERTICAL
-        col.gravity = Gravity.CENTER
-        col.setPadding(dp(16), dp(12), dp(16), dp(12))
-        card.addView(col)
-
-        val icon = ImageView(activity)
-        icon.setImageResource(iconResId)
-        icon.setColorFilter(Color.WHITE)
-        val circleBg = GradientDrawable()
-        circleBg.shape = GradientDrawable.OVAL
-        circleBg.setColor(color(R.color.istan_olive))
-        icon.background = circleBg
-        icon.setPadding(dp(iconInsetDp), dp(iconInsetDp), dp(iconInsetDp), dp(iconInsetDp))
-        col.addView(icon, LinearLayout.LayoutParams(dp(28), dp(28)))
-
-        val labelView = text(label, 13, R.color.istan_text, false)
-        labelView.gravity = Gravity.CENTER
-        labelView.maxLines = 2
-        labelView.ellipsize = android.text.TextUtils.TruncateAt.END
-        labelView.setPadding(0, dp(8), 0, 0)
-        col.addView(labelView)
-
-        card.setOnClickListener { action() }
-        return card
-    }
 
     private fun actionButton(title: String, primary: Boolean, action: () -> Unit): View {
         val card = MaterialCardView(activity)
