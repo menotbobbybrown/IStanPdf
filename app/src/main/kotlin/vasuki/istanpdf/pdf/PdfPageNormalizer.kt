@@ -37,9 +37,9 @@ object PdfPageNormalizer {
         )
         before.release()
 
-        val after = PdfCanvas(page.newContentStreamAfter(), page.resources, document)
-        after.restoreState()
-        after.release()
+        page.newContentStreamAfter()
+            .getOutputStream()
+            .writeBytes("Q\n".toByteArray(Charsets.US_ASCII))
 
         val box = Rectangle(0f, 0f, layout.width, layout.height)
         page.setMediaBox(box)
