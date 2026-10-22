@@ -15,6 +15,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -134,24 +135,39 @@ class EditorViewBuilder(
                 titleText == "Reorder Pages" ||
                 titleText == "Modify PDF"
             )
+        val showSelectionControls = titleText == "Modify PDF" || titleText == "Remove Pages" || titleText == "Reorder Pages"
+
+        fun pillCard(): MaterialCardView {
+            val card = MaterialCardView(activity)
+            card.setCardBackgroundColor(color(R.color.istan_surface))
+            card.radius = dp(28).toFloat()
+            card.strokeWidth = dp(1)
+            card.strokeColor = color(R.color.istan_outline)
+            card.cardElevation = 0f
+            card.setRippleColorResource(android.R.color.transparent)
+            return card
+        }
+
+        val controlsRow = if (showNormalization || showSelectionControls) {
+            LinearLayout(activity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+        } else null
+
+        controlsRow?.let {
+            val controlsLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            controlsLp.setMargins(0, 0, 0, dp(8))
+            header.addView(it, controlsLp)
+        }
+
         if (showNormalization) {
-            val normalizeRow = LinearLayout(activity)
-            normalizeRow.orientation = LinearLayout.HORIZONTAL
-            normalizeRow.gravity = Gravity.CENTER_VERTICAL
-
-            val normalizeChip = MaterialCardView(activity)
-            normalizeChip.setCardBackgroundColor(color(R.color.istan_surface))
-            normalizeChip.radius = dp(28).toFloat()
-            normalizeChip.strokeWidth = dp(1)
-            normalizeChip.strokeColor = color(R.color.istan_outline)
-            normalizeChip.cardElevation = 0f
-            normalizeChip.setRippleColorResource(android.R.color.transparent)
-
+            val normalizeChip = pillCard()
             val chipRow = LinearLayout(activity)
             chipRow.orientation = LinearLayout.HORIZONTAL
             chipRow.gravity = Gravity.CENTER_VERTICAL
-            chipRow.setPadding(dp(14), dp(8), dp(10), dp(8))
-            normalizeChip.addView(chipRow)
+            chipRow.setPadding(dp(14), 0, dp(10), 0)
+            normalizeChip.addView(chipRow, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT))
 
             val normalizeLabel = text("Normalize: ${actions.getNormalization().label}", 14, R.color.istan_text, false)
             chipRow.addView(normalizeLabel)
@@ -171,20 +187,29 @@ class EditorViewBuilder(
                 }
             }
 
-            normalizeRow.addView(
-                normalizeChip,
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            )
+            controlsRow?.addView(normalizeChip, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)))
+        }
 
-            val normalizeLp = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            normalizeLp.setMargins(0, 0, 0, dp(12))
-            header.addView(normalizeRow, normalizeLp)
+        val selectedCountView = if (showSelectionControls) {
+            TextView(activity).apply {
+                textSize = 14f
+                typeface = AppFont.regular
+                gravity = Gravity.START
+                setTextColor(if (ThemePrefs.isAmoled(activity)) Color.WHITE else Color.BLACK)
+                setPadding(0, dp(4), 0, dp(8))
+            }
+        } else null
+
+        fun refreshCount() {
+            val counter = selectedCountView ?: return
+            val pages = actions.getPages()
+            var count = 0
+            for (p in pages) if (p.keep) count++
+            counter.text = "$count of ${pages.size} selected"
+        }
+
+        selectedCountView?.let {
+            header.addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
 
         val recycler = RecyclerView(activity)
@@ -195,37 +220,13 @@ class EditorViewBuilder(
         outer.addView(recycler, listParams)
         pageList = recycler
 
-        val updateCountRef = arrayOfNulls<Runnable>(1)
-
-        if (titleText == "Modify PDF" || titleText == "Remove Pages" || titleText == "Reorder Pages") {
-            val selectedRow = LinearLayout(activity)
-            selectedRow.orientation = LinearLayout.HORIZONTAL
-            selectedRow.gravity = Gravity.CENTER_VERTICAL
-            selectedRow.setPadding(dp(22), dp(8), dp(22), dp(8))
-
-            val textCol = LinearLayout(activity)
-            textCol.orientation = LinearLayout.VERTICAL
-            selectedRow.addView(textCol, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-
-            val selTitle = text("Selected Pages", 18, R.color.istan_text, true)
-            textCol.addView(selTitle)
-
-            val selSub = text("", 14, R.color.istan_olive, false)
-            selSub.setPadding(0, dp(4), 0, 0)
-            textCol.addView(selSub)
-
-            val editBtn = MaterialCardView(activity)
-            editBtn.setCardBackgroundColor(Color.TRANSPARENT)
-            editBtn.radius = dp(100).toFloat()
-            editBtn.strokeWidth = dp(1)
-            editBtn.strokeColor = color(R.color.istan_outline)
-            editBtn.cardElevation = 0f
-            editBtn.setRippleColorResource(android.R.color.transparent)
+        if (showSelectionControls) {
+            val editBtn = pillCard()
 
             val editLayout = LinearLayout(activity)
             editLayout.orientation = LinearLayout.HORIZONTAL
             editLayout.gravity = Gravity.CENTER_VERTICAL
-            editLayout.setPadding(dp(12), dp(6), dp(12), dp(6))
+            editLayout.setPadding(dp(14), 0, dp(14), 0)
 
             val editIcon = ImageView(activity)
             editIcon.setImageResource(R.drawable.edit_minimal_24px)
@@ -236,16 +237,13 @@ class EditorViewBuilder(
             editTxt.setPadding(dp(6), 0, 0, 0)
             editLayout.addView(editTxt)
 
-            editBtn.addView(editLayout)
-            selectedRow.addView(editBtn)
-            outer.addView(selectedRow, 2)
+            editBtn.addView(editLayout, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT))
 
-            updateCountRef[0] = Runnable {
-                var count = 0
-                for (p in actions.getPages()) if (p.keep) count++
-                selSub.text = "$count of ${actions.getPages().size} pages selected"
-            }
-            updateCountRef[0]!!.run()
+            controlsRow?.addView(Space(activity), LinearLayout.LayoutParams(0, 1, 1f))
+
+            val editLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(40))
+            if (showNormalization) editLp.marginStart = dp(8)
+            controlsRow?.addView(editBtn, editLp)
 
             editBtn.setOnClickListener {
                 val input = EditText(activity)
@@ -365,7 +363,7 @@ class EditorViewBuilder(
                         }
                     }
                     recycler.adapter?.notifyDataSetChanged()
-                    updateCountRef[0]?.run()
+                    refreshCount()
                 }
             }
         }
@@ -381,9 +379,17 @@ class EditorViewBuilder(
 
         val isMerge = titleText == "Merge PDF"
         val adapter = PagesAdapter(actions, {
-            updateCountRef[0]?.run()
+            refreshCount()
         }, isImg, hideRotate, hideDrag, isMerge)
         recycler.adapter = adapter
+        adapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
+            override fun onChanged() { refreshCount() }
+            override fun onItemRangeChanged(positionStart: Int, itemCount: Int) { refreshCount() }
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) { refreshCount() }
+            override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) { refreshCount() }
+            override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) { refreshCount() }
+        })
+        refreshCount()
 
         if (allowReorder) {
             val touchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {

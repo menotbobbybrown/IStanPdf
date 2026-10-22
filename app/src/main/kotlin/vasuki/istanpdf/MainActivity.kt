@@ -1022,7 +1022,7 @@ class MainActivity : AppCompatActivity() {
                 val options = mutableListOf<BottomSheetItem>()
                 options.add(
                     BottomSheetItem(
-                        "Off",
+                        NormalizeTarget.NONE.label,
                         if (current == NormalizeTarget.NONE) R.drawable.check_24px else 0,
                         Runnable { onPicked(NormalizeTarget.NONE) },
                         tintIcon = current == NormalizeTarget.NONE
@@ -1031,7 +1031,7 @@ class MainActivity : AppCompatActivity() {
                 for (target in NormalizeTarget.presets) {
                     options.add(
                         BottomSheetItem(
-                            "${target.label}  ·  ${target.detail}",
+                            target.label,
                             if (current == target) R.drawable.check_24px else 0,
                             Runnable { onPicked(target) },
                             tintIcon = current == target
