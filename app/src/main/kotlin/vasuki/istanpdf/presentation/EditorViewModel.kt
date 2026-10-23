@@ -6,6 +6,7 @@ import android.util.LruCache
 import androidx.lifecycle.ViewModel
 import vasuki.istanpdf.model.NormalizeTarget
 import vasuki.istanpdf.model.PageItem
+import vasuki.istanpdf.model.PageOrientation
 import java.io.File
 import java.util.Collections
 
@@ -19,6 +20,7 @@ class EditorViewModel : ViewModel() {
     var originalFileName: String? = null
     var pagesAdded: Boolean = false
     var normalizeTarget: NormalizeTarget = NormalizeTarget.NONE
+    var pageOrientation: PageOrientation = PageOrientation.AUTO
 
     val thumbCache = object : LruCache<String, Bitmap>(maxCacheBytes(8)) {
         override fun sizeOf(key: String, value: Bitmap) = value.byteCount
@@ -58,6 +60,7 @@ class EditorViewModel : ViewModel() {
         originalFileName = null
         pagesAdded = false
         normalizeTarget = NormalizeTarget.NONE
+        pageOrientation = PageOrientation.AUTO
         cleanupTempFiles()
     }
 

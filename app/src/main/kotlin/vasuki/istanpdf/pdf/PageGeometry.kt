@@ -2,6 +2,7 @@ package vasuki.istanpdf.pdf
 
 import com.itextpdf.kernel.geom.Rectangle
 import vasuki.istanpdf.model.NormalizeTarget
+import vasuki.istanpdf.model.PageOrientation
 
 object PageGeometry {
     data class PageLayout(
@@ -14,15 +15,31 @@ object PageGeometry {
         target: NormalizeTarget,
         contentWidth: Float,
         contentHeight: Float,
-        rotation: Int
+        rotation: Int,
+        orientation: PageOrientation = PageOrientation.AUTO
     ): PageLayout {
-        if (target == NormalizeTarget.NONE) {
+        if (target == NormalizeTarget.NONE && orientation == PageOrientation.AUTO) {
             return PageLayout(contentWidth, contentHeight, Rectangle(0f, 0f, contentWidth, contentHeight))
         }
         val swapped = rotation % 180 != 0
         val displayedWidth = if (swapped) contentHeight else contentWidth
         val displayedHeight = if (swapped) contentWidth else contentHeight
-        val landscape = displayedWidth > displayedHeight
+        val naturalLandscape = displayedWidth > displayedHeight
+        val landscape = when (orientation) {
+            PageOrientation.AUTO -> naturalLandscape
+            PageOrientation.PORTRAIT -> false
+            PageOrientation.LANDSCAPE -> true
+        }
+        if (target == NormalizeTarget.NONE) {
+            val keep = naturalLandscape == landscape
+            val pageWidth = if (keep) contentWidth else contentHeight
+            val pageHeight = if (keep) contentHeight else contentWidth
+            return PageLayout(
+                pageWidth,
+                pageHeight,
+                fitInside(contentWidth, contentHeight, pageWidth, pageHeight)
+            )
+        }
         val targetDisplayedWidth = if (landscape) {
             maxOf(target.widthPt, target.heightPt)
         } else {

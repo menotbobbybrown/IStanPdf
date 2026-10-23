@@ -4,6 +4,7 @@ import android.net.Uri
 import vasuki.istanpdf.data.PdfEngine
 import vasuki.istanpdf.model.NormalizeTarget
 import vasuki.istanpdf.model.PageItem
+import vasuki.istanpdf.model.PageOrientation
 
 class ImagesToPdf(private val pdfEngine: PdfEngine) {
     @Throws(Exception::class)
@@ -11,9 +12,10 @@ class ImagesToPdf(private val pdfEngine: PdfEngine) {
         sources: List<Uri>,
         pages: List<PageItem>,
         destination: Uri,
-        normalize: NormalizeTarget = NormalizeTarget.NONE
+        normalize: NormalizeTarget = NormalizeTarget.NONE,
+        orientation: PageOrientation = PageOrientation.AUTO
     ) {
         require(sources.isNotEmpty()) { "At least one image is required" }
-        pdfEngine.imagesToPdf(sources, pages, destination, normalize)
+        pdfEngine.imagesToPdf(sources, pages, destination, normalize, orientation)
     }
 }

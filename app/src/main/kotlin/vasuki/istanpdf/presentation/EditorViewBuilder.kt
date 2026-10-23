@@ -15,7 +15,6 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -27,6 +26,7 @@ import vasuki.istanpdf.R
 import vasuki.istanpdf.ThemePrefs
 import vasuki.istanpdf.model.NormalizeTarget
 import vasuki.istanpdf.model.PageItem
+import vasuki.istanpdf.model.PageOrientation
 
 class EditorViewBuilder(
     private val activity: Activity
@@ -49,7 +49,8 @@ class EditorViewBuilder(
         fun rotatePage(item: PageItem, degrees: Int, onReady: (thumb: Bitmap, fullRes: Bitmap?) -> Unit)
         fun getNormalization(): NormalizeTarget
         fun setNormalization(target: NormalizeTarget)
-        fun pickNormalization(current: NormalizeTarget, onPicked: (NormalizeTarget) -> Unit)
+        fun getOrientation(): PageOrientation
+        fun setOrientation(orientation: PageOrientation)
     }
 
     companion object {
@@ -137,65 +138,12 @@ class EditorViewBuilder(
             )
         val showSelectionControls = titleText == "Modify PDF" || titleText == "Remove Pages" || titleText == "Reorder Pages"
 
-        fun pillCard(): MaterialCardView {
-            val card = MaterialCardView(activity)
-            card.setCardBackgroundColor(color(R.color.istan_surface))
-            card.radius = dp(28).toFloat()
-            card.strokeWidth = dp(1)
-            card.strokeColor = color(R.color.istan_outline)
-            card.cardElevation = 0f
-            card.setRippleColorResource(android.R.color.transparent)
-            return card
-        }
-
-        val controlsRow = if (showNormalization || showSelectionControls) {
-            LinearLayout(activity).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-            }
-        } else null
-
-        controlsRow?.let {
-            val controlsLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            controlsLp.setMargins(0, 0, 0, dp(8))
-            header.addView(it, controlsLp)
-        }
-
-        if (showNormalization) {
-            val normalizeChip = pillCard()
-            val chipRow = LinearLayout(activity)
-            chipRow.orientation = LinearLayout.HORIZONTAL
-            chipRow.gravity = Gravity.CENTER_VERTICAL
-            chipRow.setPadding(dp(14), 0, dp(10), 0)
-            normalizeChip.addView(chipRow, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT))
-
-            val normalizeLabel = text("Normalize: ${actions.getNormalization().label}", 14, R.color.istan_text, false)
-            chipRow.addView(normalizeLabel)
-
-            val chevron = ImageView(activity)
-            chevron.setImageResource(R.drawable.chevron_right_24px)
-            chevron.setColorFilter(color(R.color.istan_text_muted))
-            chevron.rotation = 90f
-            val chevronLp = LinearLayout.LayoutParams(dp(18), dp(18))
-            chevronLp.marginStart = dp(6)
-            chipRow.addView(chevron, chevronLp)
-
-            normalizeChip.setOnClickListener {
-                actions.pickNormalization(actions.getNormalization()) { target ->
-                    actions.setNormalization(target)
-                    normalizeLabel.text = "Normalize: ${target.label}"
-                }
-            }
-
-            controlsRow?.addView(normalizeChip, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)))
-        }
-
         val selectedCountView = if (showSelectionControls) {
             TextView(activity).apply {
-                textSize = 14f
+                textSize = 13f
                 typeface = AppFont.regular
                 gravity = Gravity.START
-                setTextColor(if (ThemePrefs.isAmoled(activity)) Color.WHITE else Color.BLACK)
+                setTextColor(color(R.color.istan_text))
                 setPadding(0, dp(4), 0, dp(8))
             }
         } else null
@@ -220,32 +168,7 @@ class EditorViewBuilder(
         outer.addView(recycler, listParams)
         pageList = recycler
 
-        if (showSelectionControls) {
-            val editBtn = pillCard()
-
-            val editLayout = LinearLayout(activity)
-            editLayout.orientation = LinearLayout.HORIZONTAL
-            editLayout.gravity = Gravity.CENTER_VERTICAL
-            editLayout.setPadding(dp(14), 0, dp(14), 0)
-
-            val editIcon = ImageView(activity)
-            editIcon.setImageResource(R.drawable.edit_minimal_24px)
-            editIcon.setColorFilter(color(R.color.istan_text_muted))
-            editLayout.addView(editIcon, LinearLayout.LayoutParams(dp(16), dp(16)))
-
-            val editTxt = text("Edit Range", 14, R.color.istan_text_muted, false)
-            editTxt.setPadding(dp(6), 0, 0, 0)
-            editLayout.addView(editTxt)
-
-            editBtn.addView(editLayout, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT))
-
-            controlsRow?.addView(Space(activity), LinearLayout.LayoutParams(0, 1, 1f))
-
-            val editLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(40))
-            if (showNormalization) editLp.marginStart = dp(8)
-            controlsRow?.addView(editBtn, editLp)
-
-            editBtn.setOnClickListener {
+        fun showRangeDialog() {
                 val input = EditText(activity)
                 input.setTextColor(color(R.color.istan_text))
                 input.hint = "Type range (e.g. 1-3, 5)..."
@@ -365,7 +288,6 @@ class EditorViewBuilder(
                     recycler.adapter?.notifyDataSetChanged()
                     refreshCount()
                 }
-            }
         }
 
         val isRemoveDocx = titleText == "Remove Pages"
@@ -390,6 +312,32 @@ class EditorViewBuilder(
             override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) { refreshCount() }
         })
         refreshCount()
+
+        if (showNormalization || showSelectionControls) {
+            val tuneButton = ImageView(activity)
+            tuneButton.setImageResource(R.drawable.tune_24px)
+            tuneButton.setColorFilter(color(R.color.istan_text))
+            tuneButton.contentDescription = "Document options"
+            tuneButton.setPadding(dp(12), dp(12), dp(12), dp(12))
+            val ripple = android.util.TypedValue()
+            activity.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, ripple, true)
+            tuneButton.setBackgroundResource(ripple.resourceId)
+            tuneButton.setOnClickListener {
+                DocumentOptionsSheet(
+                    activity = activity,
+                    showPageSize = showNormalization,
+                    showOrientation = showNormalization,
+                    showEditRange = showSelectionControls,
+                    normalization = actions.getNormalization(),
+                    orientation = actions.getOrientation(),
+                    onNormalization = { actions.setNormalization(it) },
+                    onOrientation = { actions.setOrientation(it) },
+                    onEditRange = { showRangeDialog() }
+                ).show()
+            }
+            titleRow.setPadding(dp(4), dp(24), dp(8), dp(8))
+            titleRow.addView(tuneButton, LinearLayout.LayoutParams(dp(48), dp(48)))
+        }
 
         if (allowReorder) {
             val touchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {

@@ -15,6 +15,7 @@ import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas
 import vasuki.istanpdf.model.NormalizeTarget
 import vasuki.istanpdf.model.PageItem
+import vasuki.istanpdf.model.PageOrientation
 import java.io.ByteArrayOutputStream
 
 object ImagesToPdf {
@@ -26,7 +27,8 @@ object ImagesToPdf {
         src: List<Uri>,
         pages: List<PageItem>,
         dst: Uri,
-        normalize: NormalizeTarget = NormalizeTarget.NONE
+        normalize: NormalizeTarget = NormalizeTarget.NONE,
+        orientation: PageOrientation = PageOrientation.AUTO
     ) {
         PdfStore.openDst(ctx, dst).use { out ->
             val pdfDoc = PdfDocument(PdfWriter(out))
@@ -136,7 +138,7 @@ object ImagesToPdf {
                         (pageItem.rotation + exifDegrees) % 360
                     }
                     val rotation = if (totalRotation < 0) totalRotation + 360 else totalRotation
-                    val layout = PageGeometry.layout(normalize, pw, ph, rotation)
+                    val layout = PageGeometry.layout(normalize, pw, ph, rotation, orientation)
                     val page = pdfDoc.addNewPage(PageSize(layout.width, layout.height))
                     if (rotation != 0) {
                         page.put(PdfName.Rotate, PdfNumber(rotation))

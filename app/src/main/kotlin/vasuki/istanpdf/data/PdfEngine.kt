@@ -12,6 +12,7 @@ import vasuki.istanpdf.pdf.PdfMerge
 import vasuki.istanpdf.pdf.PdfReorder
 import vasuki.istanpdf.pdf.PdfToJpegZip
 import vasuki.istanpdf.model.NormalizeTarget
+import vasuki.istanpdf.model.PageOrientation
 import vasuki.istanpdf.util.ContentFiles
 import java.io.Closeable
 import java.io.File
@@ -67,9 +68,10 @@ class PdfEngine(context: Context) {
         source: Uri,
         pages: List<vasuki.istanpdf.model.PageItem>,
         destination: Uri,
-        normalize: NormalizeTarget = NormalizeTarget.NONE
+        normalize: NormalizeTarget = NormalizeTarget.NONE,
+        orientation: PageOrientation = PageOrientation.AUTO
     ): Int {
-        return PdfReorder.run(context, source, pages, destination, normalize)
+        return PdfReorder.run(context, source, pages, destination, normalize, orientation)
     }
 
     @Throws(Exception::class)
@@ -82,9 +84,10 @@ class PdfEngine(context: Context) {
         sources: List<Uri>,
         pages: List<vasuki.istanpdf.model.PageItem>,
         destination: Uri,
-        normalize: NormalizeTarget = NormalizeTarget.NONE
+        normalize: NormalizeTarget = NormalizeTarget.NONE,
+        orientation: PageOrientation = PageOrientation.AUTO
     ) {
-        ImagesToPdf.run(context, sources, pages, destination, normalize)
+        ImagesToPdf.run(context, sources, pages, destination, normalize, orientation)
     }
 
     @Throws(Exception::class)

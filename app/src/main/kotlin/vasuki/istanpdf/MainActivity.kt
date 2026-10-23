@@ -40,6 +40,8 @@ import vasuki.istanpdf.data.PdfEngine
 import vasuki.istanpdf.di.AppModule
 import vasuki.istanpdf.model.NormalizeTarget
 import vasuki.istanpdf.model.PageItem
+import vasuki.istanpdf.model.PageOrientation
+import vasuki.istanpdf.presentation.BottomSheetStyle
 import vasuki.istanpdf.presentation.CropOverlayView
 import vasuki.istanpdf.presentation.EditorViewBuilder
 import vasuki.istanpdf.presentation.EditorViewModel
@@ -815,8 +817,9 @@ class MainActivity : AppCompatActivity() {
         } else if (requestCode == REQ_SAVE_IMAGES_TO_PDF) {
             val snapshot = ArrayList(pages)
             val normalize = editorViewModel.normalizeTarget
+            val orientation = editorViewModel.pageOrientation
             runJob("Converting Images...", OutputRef(destination, MIME_PDF, getDisplayName(destination))) {
-                AppModule.get().imagesToPdf.execute(ArrayList(pendingUris), snapshot, destination, normalize)
+                AppModule.get().imagesToPdf.execute(ArrayList(pendingUris), snapshot, destination, normalize, orientation)
             }
         } else if (requestCode == REQ_SAVE_PDF_TO_JPG) {
             runJob("Converting to JPG...", OutputRef(destination, MIME_JPEG, getDisplayName(destination))) { AppModule.get().pdfToJpeg.executeSingle(pendingUris[0], destination, pdfToImageDpi) }
@@ -866,6 +869,7 @@ class MainActivity : AppCompatActivity() {
             val source = editorViewModel.reorderSource ?: return
             val snapshot = ArrayList(pages)
             val normalize = editorViewModel.normalizeTarget
+            val orientation = editorViewModel.pageOrientation
             val isDocx = (requestCode == REQ_SAVE_REORDER_DOCX_EXPORT)
 
             var removed = false
@@ -908,7 +912,7 @@ class MainActivity : AppCompatActivity() {
                         AppModule.get().saveDocx.execute(source, snapshot, destination)
                     }
                 } else {
-                    AppModule.get().reorderPdf.execute(source, snapshot, destination, normalize)
+                    AppModule.get().reorderPdf.execute(source, snapshot, destination, normalize, orientation)
                 }
             }
         }
@@ -1018,27 +1022,9 @@ class MainActivity : AppCompatActivity() {
             override fun setNormalization(target: NormalizeTarget) {
                 editorViewModel.normalizeTarget = target
             }
-            override fun pickNormalization(current: NormalizeTarget, onPicked: (NormalizeTarget) -> Unit) {
-                val options = mutableListOf<BottomSheetItem>()
-                options.add(
-                    BottomSheetItem(
-                        NormalizeTarget.NONE.label,
-                        if (current == NormalizeTarget.NONE) R.drawable.check_24px else 0,
-                        Runnable { onPicked(NormalizeTarget.NONE) },
-                        tintIcon = current == NormalizeTarget.NONE
-                    )
-                )
-                for (target in NormalizeTarget.presets) {
-                    options.add(
-                        BottomSheetItem(
-                            target.label,
-                            if (current == target) R.drawable.check_24px else 0,
-                            Runnable { onPicked(target) },
-                            tintIcon = current == target
-                        )
-                    )
-                }
-                showBottomSheetMenu("Normalize Pages", options)
+            override fun getOrientation(): PageOrientation = editorViewModel.pageOrientation
+            override fun setOrientation(orientation: PageOrientation) {
+                editorViewModel.pageOrientation = orientation
             }
         })
         cancelStatusHide()
@@ -1053,6 +1039,7 @@ class MainActivity : AppCompatActivity() {
         val pages = editorViewModel.pages
         val pendingUris = editorViewModel.pendingUris
         val normalized = !docxExport && editorViewModel.normalizeTarget.isEnabled
+        val oriented = !docxExport && editorViewModel.pageOrientation != PageOrientation.AUTO
 
         var removed = false
         var keepCount = 0
@@ -1103,7 +1090,7 @@ class MainActivity : AppCompatActivity() {
         val pagesAdded = editorViewModel.pagesAdded
 
         if ("Images to PDF" == titleText) {
-        } else if (!removed && !reordered && !rotated && !pagesAdded && !cropped && !normalized) {
+        } else if (!removed && !reordered && !rotated && !pagesAdded && !cropped && !normalized && !oriented) {
             setBusy(false, "No changes to save.")
             return
         }
@@ -1115,6 +1102,7 @@ class MainActivity : AppCompatActivity() {
         if (pagesAdded) changedCount++
         if (cropped) changedCount++
         if (normalized) changedCount++
+        if (oriented) changedCount++
 
         val suffix = when {
             changedCount > 1 -> "_modified"
@@ -1124,6 +1112,7 @@ class MainActivity : AppCompatActivity() {
             rotated -> "_rotated"
             cropped -> "_cropped"
             normalized -> "_normalized"
+            oriented -> "_oriented"
             else -> ""
         }
 
@@ -1220,22 +1209,7 @@ class MainActivity : AppCompatActivity() {
         bottomSheetDialog.show()
 
         val bottomSheet = bottomSheetDialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
-        bottomSheet?.backgroundTintList = android.content.res.ColorStateList.valueOf(color(R.color.istan_sheet))
-        bottomSheet?.let { applyBottomSheetSystemBarTheme(bottomSheetDialog, it) }
-    }
-
-    private fun applyBottomSheetSystemBarTheme(
-        bottomSheetDialog: com.google.android.material.bottomsheet.BottomSheetDialog,
-        bottomSheet: View
-    ) {
-        val dialogWindow = bottomSheetDialog.window ?: return
-        dialogWindow.addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-        dialogWindow.navigationBarColor = color(R.color.istan_sheet)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            dialogWindow.isNavigationBarContrastEnforced = false
-        }
-        val controller = androidx.core.view.WindowCompat.getInsetsController(dialogWindow, bottomSheet)
-        controller.isAppearanceLightNavigationBars = !ThemePrefs.isAmoled(this)
+        bottomSheet?.let { BottomSheetStyle.apply(this, bottomSheetDialog, it) }
     }
 
     private fun showImageSourceChooser() {
