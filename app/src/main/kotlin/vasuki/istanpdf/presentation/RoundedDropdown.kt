@@ -4,7 +4,6 @@ import android.app.Activity
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -47,11 +46,7 @@ class RoundedDropdown(
             isFillViewport = true
             isVerticalScrollBarEnabled = false
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
-            background = GradientDrawable().apply {
-                cornerRadius = dp(16).toFloat()
-                setColor(color(R.color.istan_surface_high))
-                setStroke(dp(1), color(R.color.istan_outline))
-            }
+            background = ShadcnDrawables.card(activity, ShadcnDrawables.CARD_RADIUS)
             clipToOutline = true
         }
         scroll.addView(
@@ -85,7 +80,6 @@ class RoundedDropdown(
             popupHeight,
             true
         ).apply {
-            elevation = dp(8).toFloat()
             isOutsideTouchable = true
             inputMethodMode = PopupWindow.INPUT_METHOD_NOT_NEEDED
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))

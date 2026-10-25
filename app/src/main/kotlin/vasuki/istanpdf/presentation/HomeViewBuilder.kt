@@ -3,10 +3,7 @@ package vasuki.istanpdf.presentation
 import android.app.Activity
 import vasuki.istanpdf.AppFont
 import android.graphics.drawable.GradientDrawable
-import android.text.SpannableString
-import android.text.Spanned
 import android.text.TextUtils
-import android.text.style.ForegroundColorSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -81,33 +78,17 @@ class HomeViewBuilder(
         heroRow.gravity = Gravity.CENTER_VERTICAL
         root.addView(heroRow)
 
-        val title = text("", 40, R.color.istan_text, true).apply { letterSpacing = -0.02f }
-        val ss = SpannableString("IStanPdf")
-        ss.setSpan(ForegroundColorSpan(color(R.color.istan_text)), 0, 5, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        val isMonochrome = ThemePrefs.accent(activity).name == "Monochrome"
-        val isDark = ThemePrefs.isAmoled(activity)
-        val pdfColor = if (isMonochrome) {
-            if (isDark) android.graphics.Color.WHITE else android.graphics.Color.BLACK
-        } else {
-            color(R.color.istan_olive)
-        }
-        ss.setSpan(ForegroundColorSpan(pdfColor), 5, 8, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        title.text = ss
+        val title = text("IStanPdf", 40, R.color.istan_text, true).apply { letterSpacing = -0.02f }
         heroRow.addView(title, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
 
         val settingsButton = MaterialCardView(activity)
-        settingsButton.setCardBackgroundColor(color(R.color.istan_surface))
-        settingsButton.radius = dp(100).toFloat()
-        settingsButton.strokeWidth = dp(1)
-        settingsButton.strokeColor = color(R.color.istan_outline)
-        settingsButton.cardElevation = 0f
-        settingsButton.useCompatPadding = false
+        ShadcnDrawables.applyButton(settingsButton, ShadcnDrawables.ButtonVariant.OUTLINE, ShadcnDrawables.BUTTON_RADIUS)
         settingsButton.setOnClickListener { actions.onOpenSettings() }
 
         val menuIcon = ImageView(activity)
         menuIcon.setImageResource(R.drawable.menu)
-        menuIcon.setColorFilter(color(R.color.istan_olive_dark))
-        menuIcon.setPadding(dp(8), dp(8), dp(8), dp(8))
+        menuIcon.setColorFilter(color(R.color.istan_text))
+        menuIcon.setPadding(dp(12), dp(12), dp(12), dp(12))
         settingsButton.addView(menuIcon, FrameLayout.LayoutParams(dp(48), dp(48), Gravity.CENTER))
 
         val settingsLp = LinearLayout.LayoutParams(dp(48), dp(48))
@@ -161,21 +142,17 @@ class HomeViewBuilder(
         statusCard.orientation = LinearLayout.HORIZONTAL
         statusCard.gravity = Gravity.CENTER
         statusCard.isBaselineAligned = false
-        statusCard.setPadding(dp(16), dp(8), dp(24), dp(8))
-        val statusBg = GradientDrawable()
-        statusBg.setColor(color(R.color.istan_surface))
-        statusBg.cornerRadius = dp(32).toFloat()
-        statusBg.setStroke(dp(1), color(R.color.istan_outline))
-        statusCard.background = statusBg
+        statusCard.setPadding(dp(12), dp(6), dp(12), dp(6))
+        statusCard.background = ShadcnDrawables.badge(activity, ShadcnDrawables.PILL_RADIUS)
 
         statusIndicator = ImageView(activity)
         val dot = GradientDrawable()
         dot.shape = GradientDrawable.OVAL
         dot.setColor(color(R.color.istan_olive))
         statusIndicator!!.setImageDrawable(dot)
-        statusCard.addView(statusIndicator, LinearLayout.LayoutParams(dp(16), dp(16)))
+        statusCard.addView(statusIndicator, LinearLayout.LayoutParams(dp(12), dp(12)))
 
-        status = text(WAITING_TEXT, 16, R.color.istan_olive, false)
+        status = text(WAITING_TEXT, 14, R.color.istan_olive, false)
         status!!.gravity = Gravity.CENTER_VERTICAL
         status!!.setPadding(dp(8), 0, 0, 0)
         statusCard.addView(status, LinearLayout.LayoutParams(
@@ -211,12 +188,7 @@ class HomeViewBuilder(
 
     private fun dashboardCard(title: String, iconResId: Int, action: () -> Unit): View {
         val card = MaterialCardView(activity)
-        card.setCardBackgroundColor(color(R.color.istan_surface))
-        card.radius = dp(16).toFloat()
-        card.strokeWidth = dp(1)
-        card.strokeColor = color(R.color.istan_outline)
-        card.cardElevation = 0f
-        card.useCompatPadding = false
+        ShadcnDrawables.applyCard(card, ShadcnDrawables.CARD_RADIUS)
 
         val row = LinearLayout(activity)
         row.gravity = Gravity.CENTER_VERTICAL
@@ -258,12 +230,7 @@ class HomeViewBuilder(
 
     private fun kofiCard(title: String, iconResId: Int, action: () -> Unit): View {
         val card = MaterialCardView(activity)
-        card.setCardBackgroundColor(color(R.color.istan_surface))
-        card.radius = dp(16).toFloat()
-        card.strokeWidth = dp(1)
-        card.strokeColor = color(R.color.istan_outline)
-        card.cardElevation = 0f
-        card.useCompatPadding = false
+        ShadcnDrawables.applyCard(card, ShadcnDrawables.CARD_RADIUS)
 
         val row = LinearLayout(activity)
         row.gravity = Gravity.CENTER_VERTICAL

@@ -26,9 +26,9 @@
         android:allowBackup="true"
         android:extractNativeLibs="true"
         android:largeHeap="true"
-        android:icon="@drawable/ic_launcher_olive"
+        android:icon="@drawable/ic_launcher_monochrome"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/ic_launcher_olive"
+        android:roundIcon="@drawable/ic_launcher_monochrome"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         
@@ -43,93 +43,11 @@
             android:exported="true"
             android:configChanges="orientation|screenSize|keyboard|keyboardHidden|uiMode"
             android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
-
-        <activity-alias
-            android:name=".LauncherOlive"
-            android:targetActivity=".MainActivity"
-            android:icon="@drawable/ic_launcher_olive"
-            android:roundIcon="@drawable/ic_launcher_olive"
-            android:exported="true"
-            android:enabled="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-        
-        <activity-alias
-            android:enabled="false"
-            android:name=".LauncherRose"
-            android:targetActivity=".MainActivity"
-            android:icon="@drawable/ic_launcher_rose"
-            android:roundIcon="@drawable/ic_launcher_rose"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:enabled="false"
-            android:name=".LauncherTerracotta"
-            android:targetActivity=".MainActivity"
-            android:icon="@drawable/ic_launcher_terracotta"
-            android:roundIcon="@drawable/ic_launcher_terracotta"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:enabled="false"
-            android:name=".LauncherSand"
-            android:targetActivity=".MainActivity"
-            android:icon="@drawable/ic_launcher_sand"
-            android:roundIcon="@drawable/ic_launcher_sand"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:enabled="false"
-            android:name=".LauncherMonochrome"
-            android:targetActivity=".MainActivity"
-            android:icon="@drawable/ic_launcher_monochrome"
-            android:roundIcon="@drawable/ic_launcher_monochrome"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <activity-alias
-            android:enabled="false"
-            android:name=".LauncherObsidian"
-            android:targetActivity=".MainActivity"
-            android:icon="@drawable/ic_launcher_obsidian"
-            android:roundIcon="@drawable/ic_launcher_obsidian"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <receiver
-            android:name=".UpdateReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-            </intent-filter>
-        </receiver>
 
         <service
             android:name=".libreoffice.DocxPreviewService"

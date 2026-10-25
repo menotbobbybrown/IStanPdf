@@ -7,16 +7,11 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.GradientDrawable
-import android.os.Bundle
-import android.os.Build
 import android.graphics.drawable.Drawable
-import android.os.Handler
+import android.os.Build
+import android.os.Bundle
 import android.provider.MediaStore
 import android.text.InputType
-import android.widget.EditText
-import android.widget.ImageView
-import android.os.Looper
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextPaint
@@ -25,9 +20,10 @@ import android.text.style.MetricAffectingSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.PopupWindow
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -36,16 +32,12 @@ import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.materialswitch.MaterialSwitch
 import vasuki.istanpdf.libreoffice.LibreOfficeManager
+import vasuki.istanpdf.presentation.RoundedDropdown
+import vasuki.istanpdf.presentation.ShadcnDrawables
 
 class SettingsActivity : AppCompatActivity() {
-
-    private val accentCloseHandler = Handler(Looper.getMainLooper())
-    private var accentCloseRunnable: Runnable? = null
-    private var activeAccentPill: PopupWindow? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,29 +51,6 @@ class SettingsActivity : AppCompatActivity() {
         if (ThemePrefs.themeMode(this) == ThemePrefs.THEME_AUTO) {
             applySystemBarTheme()
             buildSettings(0)
-        }
-    }
-
-    override fun onDestroy() {
-        accentCloseRunnable?.let { accentCloseHandler.removeCallbacks(it) }
-        accentCloseRunnable = null
-        activeAccentPill?.dismiss()
-        activeAccentPill = null
-        super.onDestroy()
-    }
-
-    private fun applyAccentAndScheduleClose(index: Int, scrollView: ScrollView) {
-        accentCloseRunnable?.let { accentCloseHandler.removeCallbacks(it) }
-        ThemePrefs.setAccentIndex(this, index)
-        buildSettings(scrollView.scrollY)
-        if (ThemePrefs.isDynamicIcon(this)) {
-            val toast = Toast.makeText(this, "Applying new accent. App will close to refresh the icon", Toast.LENGTH_SHORT)
-            toast.show()
-            accentCloseRunnable = Runnable {
-                toast.cancel()
-                ThemePrefs.applyLauncherIconAndKill(applicationContext)
-            }
-            accentCloseHandler.postDelayed(accentCloseRunnable!!, 1500)
         }
     }
 
@@ -150,8 +119,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun settingsContent(scrollView: ScrollView): View {
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val selected = ThemePrefs.accentIndex(this)
-        val amoled = ThemePrefs.isAmoled(this)
+        val mode = ThemePrefs.themeMode(this)
 
         body.addView(categoryHeader("APPEARANCE"), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -161,109 +129,29 @@ class SettingsActivity : AppCompatActivity() {
 
         val appearanceGroup = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = roundedBackground(color(R.color.istan_surface), dp(16), dp(1))
+            background = ShadcnDrawables.card(this@SettingsActivity, ShadcnDrawables.CARD_RADIUS)
             clipToOutline = true
-            setPadding(0, dp(8), 0, dp(8))
         }
 
-        val accentRow = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(16), dp(16), dp(8))
+        val (themeRow, _) = settingsRow("Theme", THEME_LABELS[mode], clickable = true)
+        val themeChevron = ImageView(this).apply {
+            setImageResource(R.drawable.chevron_right_24px)
+            setColorFilter(color(R.color.istan_text_muted))
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
         }
-        accentRow.addView(text("Accent color", 16, R.color.istan_text, true))
-
-        val circles = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-            setPadding(0, dp(12), 0, 0)
-        }
-        for (i in ThemePrefs.ACCENTS.indices) {
-            val circle = QuadrantCircleView(this).apply {
-                bind(ThemePrefs.ACCENTS[i], selected == i, amoled)
-                setOnClickListener {
-                    if (ThemePrefs.accentIndex(this@SettingsActivity) == i) return@setOnClickListener
-                    applyAccentAndScheduleClose(i, scrollView)
-                }
-                setOnLongClickListener {
-                    showAccentPill(this, ThemePrefs.ACCENTS[i].name)
-                    true
-                }
-            }
-            circles.addView(circle, LinearLayout.LayoutParams(0, dp(56), 1f))
-        }
-        accentRow.addView(circles, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        appearanceGroup.addView(accentRow, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            bottomMargin = dp(8)
+        themeRow.addView(themeChevron, LinearLayout.LayoutParams(dp(24), dp(24)).apply {
+            marginStart = dp(8)
         })
-
-        val themeRow = LinearLayout(this).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), dp(8), dp(16), dp(8))
-        }
-        val themeTitle = text("Theme", 16, R.color.istan_text, true)
-        themeRow.addView(themeTitle, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-
-        val modes = FrameLayout(this).apply {
-            background = roundedBackground(color(R.color.istan_surface_high), dp(22), 0)
-        }
-        themeRow.addView(modes, LinearLayout.LayoutParams(dp(204), dp(44)))
-
-        val mode = ThemePrefs.themeMode(this)
-        val modeGroup = MaterialButtonToggleGroup(this).apply {
-            isSingleSelection = true
-            isSelectionRequired = true
-        }
-        modes.addView(modeGroup, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-
-        val auto = addThemeModeButton(modeGroup, "Auto", ThemePrefs.THEME_AUTO, mode)
-        val light = addThemeModeButton(modeGroup, "Light", ThemePrefs.THEME_LIGHT, mode)
-        val dark = addThemeModeButton(modeGroup, "Dark", ThemePrefs.THEME_DARK, mode)
-
-        modeGroup.check(when (mode) {
-            ThemePrefs.THEME_AUTO -> auto.id
-            ThemePrefs.THEME_LIGHT -> light.id
-            else -> dark.id
-        })
-        modeGroup.addOnButtonCheckedListener { group, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val option = group.findViewById<View>(checkedId).tag as Int
-            if (ThemePrefs.themeMode(this) == option) return@addOnButtonCheckedListener
-            ThemePrefs.setThemeMode(this, option)
-            applySystemBarTheme()
-            buildSettings(scrollView.scrollY)
-        }
-        addThemeDivider(modes, 1, mode)
-        addThemeDivider(modes, 2, mode)
-        appearanceGroup.addView(themeRow, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            bottomMargin = dp(8)
-        })
-
-        val (dynamicIconRow, _) = settingsRow("Dynamic icon", "Match launcher icon to accent")
-        dynamicIconRow.addView(styledSwitch(
-            checked = ThemePrefs.isDynamicIcon(this@SettingsActivity),
-            onToggle = { isChecked ->
-                ThemePrefs.setDynamicIcon(this@SettingsActivity, isChecked)
-                if (ThemePrefs.accentIndex(this@SettingsActivity) != 0) {
-                    accentCloseRunnable?.let { accentCloseHandler.removeCallbacks(it) }
-                    val msg = if (isChecked) "Applying accent icon. App will close to refresh the icon"
-                              else "Reverting to default icon. App will close to refresh the icon"
-                    val toast = Toast.makeText(this@SettingsActivity, msg, Toast.LENGTH_SHORT)
-                    toast.show()
-                    accentCloseRunnable = Runnable {
-                        toast.cancel()
-                        if (isChecked) {
-                            ThemePrefs.applyLauncherIconAndKill(applicationContext)
-                        } else {
-                            ThemePrefs.resetLauncherIconToDefault(applicationContext, killApp = true)
-                        }
-                    }
-                    accentCloseHandler.postDelayed(accentCloseRunnable!!, 1500)
+        themeRow.setOnClickListener {
+            RoundedDropdown(this, themeRow, THEME_LABELS, ThemePrefs.themeMode(this)) { index ->
+                if (ThemePrefs.themeMode(this) != index) {
+                    ThemePrefs.setThemeMode(this, index)
+                    applySystemBarTheme()
+                    buildSettings(scrollView.scrollY)
                 }
-            }
-        ))
-        appearanceGroup.addView(dynamicIconRow)
+            }.show()
+        }
+        appearanceGroup.addView(themeRow)
 
         body.addView(appearanceGroup, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -278,7 +166,7 @@ class SettingsActivity : AppCompatActivity() {
 
         val generalGroup = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = roundedBackground(color(R.color.istan_surface), dp(16), dp(1))
+            background = ShadcnDrawables.card(this@SettingsActivity, ShadcnDrawables.CARD_RADIUS)
             clipToOutline = true
         }
 
@@ -311,7 +199,18 @@ class SettingsActivity : AppCompatActivity() {
         cameraRow.addView(chevron, LinearLayout.LayoutParams(dp(24), dp(24)).apply {
             marginStart = dp(8)
         })
-        cameraRow.setOnClickListener { showCameraDropdown(cameraRow, cameraSubtitle, prefs) }
+        cameraRow.setOnClickListener {
+            val options = listOf("Default", "Custom")
+            val selected = if ((prefs.getString("camera_pkg", "") ?: "").isEmpty()) 0 else 1
+            RoundedDropdown(this, cameraRow, options, selected) { index ->
+                if (index == 0) {
+                    prefs.edit().putString("camera_pkg", "").apply()
+                    cameraSubtitle.text = "Default"
+                } else {
+                    showCameraPackageDialog(prefs, cameraSubtitle)
+                }
+            }.show()
+        }
         generalGroup.addView(cameraRow)
 
         body.addView(generalGroup, LinearLayout.LayoutParams(
@@ -356,11 +255,11 @@ class SettingsActivity : AppCompatActivity() {
             isChecked = checked
             thumbTintList = ColorStateList(
                 arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-                intArrayOf(color(R.color.istan_olive), color(R.color.istan_text_muted))
+                intArrayOf(ShadcnDrawables.primaryForeground(this@SettingsActivity), color(R.color.istan_text_muted))
             )
             trackTintList = ColorStateList(
                 arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-                intArrayOf(ThemePrefs.tint(color(R.color.istan_olive), color(R.color.istan_background), 0.5f), color(R.color.istan_outline))
+                intArrayOf(color(R.color.istan_olive), color(R.color.istan_outline))
             )
             setOnCheckedChangeListener { _, isChecked -> onToggle(isChecked) }
         }
@@ -375,55 +274,6 @@ class SettingsActivity : AppCompatActivity() {
             isAllCaps = true
             includeFontPadding = false
         }
-
-    private fun showCameraDropdown(anchor: View, subtitle: TextView, prefs: android.content.SharedPreferences) {
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            background = GradientDrawable().apply {
-                setColor(color(R.color.istan_surface))
-                cornerRadius = dp(12).toFloat()
-                setStroke(dp(1), color(R.color.istan_outline))
-            }
-            elevation = dp(4).toFloat()
-            setPadding(0, dp(4), 0, dp(4))
-        }
-
-        fun option(label: String, action: () -> Unit): TextView = text(label, 14, R.color.istan_text, false).apply {
-            setPadding(dp(16), dp(12), dp(16), dp(12))
-            setOnClickListener { action() }
-        }
-
-        val popupRef = arrayOfNulls<PopupWindow>(1)
-
-        container.addView(option("Default") {
-            popupRef[0]?.dismiss()
-            prefs.edit().putString("camera_pkg", "").apply()
-            subtitle.text = "Default"
-        })
-        container.addView(View(this).apply {
-            setBackgroundColor(color(R.color.istan_outline))
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)).apply {
-            setMargins(dp(12), 0, dp(12), 0)
-        })
-        container.addView(option("Custom") {
-            popupRef[0]?.dismiss()
-            showCameraPackageDialog(prefs, subtitle)
-        })
-
-        container.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
-        val popup = PopupWindow(container, container.measuredWidth.coerceAtLeast(dp(140)), ViewGroup.LayoutParams.WRAP_CONTENT, true).apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            isOutsideTouchable = true
-            elevation = dp(4).toFloat()
-        }
-        popupRef[0] = popup
-
-        val location = IntArray(2)
-        anchor.getLocationOnScreen(location)
-        popup.showAtLocation(anchor, Gravity.NO_GRAVITY,
-            location[0] + anchor.width - container.measuredWidth.coerceAtLeast(dp(140)),
-            location[1] + anchor.height + dp(4))
-    }
 
     private fun showCameraPackageDialog(prefs: android.content.SharedPreferences, subtitle: TextView) {
         val current = prefs.getString("camera_pkg", "")?.takeIf { it.isNotEmpty() }
@@ -440,7 +290,7 @@ class SettingsActivity : AppCompatActivity() {
             maxLines = 1
             isSingleLine = true
             setPadding(dp(12), dp(12), dp(12), dp(12))
-            background = roundedBackground(color(R.color.istan_surface_high), dp(12), dp(1))
+            background = ShadcnDrawables.input(this@SettingsActivity, ShadcnDrawables.BUTTON_RADIUS)
             setSelection(current.length)
         }
         tintEditText(editText, color(R.color.istan_olive))
@@ -457,11 +307,7 @@ class SettingsActivity : AppCompatActivity() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = GradientDrawable().apply {
-                setColor(color(R.color.istan_surface))
-                cornerRadius = dp(28).toFloat()
-                setStroke(dp(1), color(R.color.istan_outline))
-            }
+            background = ShadcnDrawables.card(this@SettingsActivity, ShadcnDrawables.DIALOG_RADIUS)
             setPadding(dp(24), dp(24), dp(24), dp(20))
         }
 
@@ -475,11 +321,11 @@ class SettingsActivity : AppCompatActivity() {
             setPadding(0, dp(20), 0, 0)
         }
         val cancelBtn = text("Cancel", 14, R.color.istan_text_muted, true).apply {
-            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setPadding(dp(12), dp(12), dp(12), dp(12))
             setOnClickListener { dialog.dismiss() }
         }
         val saveBtn = text("Save", 14, R.color.istan_olive, true).apply {
-            setPadding(dp(12), dp(8), 0, dp(8))
+            setPadding(dp(12), dp(12), 0, dp(12))
             setOnClickListener {
                 dialog.dismiss()
                 validateAndSaveCameraPkg(editText.text.toString(), prefs, subtitle)
@@ -533,94 +379,13 @@ class SettingsActivity : AppCompatActivity() {
         Toast.makeText(this, "Camera set to $trimmed", Toast.LENGTH_SHORT).show()
     }
 
-    private fun showAccentPill(anchor: View, name: String) {
-        activeAccentPill?.dismiss()
-        activeAccentPill = null
-        val label = text(name, 12, R.color.istan_text, true).apply {
-            gravity = Gravity.CENTER
-            setPadding(dp(12), dp(6), dp(12), dp(6))
-            background = GradientDrawable().apply {
-                setColor(color(R.color.istan_surface_high))
-                cornerRadius = dp(8).toFloat()
-                setStroke(dp(1), color(R.color.istan_outline))
-            }
-        }
-
-        label.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
-        val pill = PopupWindow(label, label.measuredWidth, label.measuredHeight, false).apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            isOutsideTouchable = false
-            elevation = dp(4).toFloat()
-        }
-
-        val location = IntArray(2)
-        anchor.getLocationOnScreen(location)
-        val x = location[0] + (anchor.width - label.measuredWidth) / 2
-        val y = location[1] - label.measuredHeight - dp(8)
-        activeAccentPill = pill
-        pill.showAtLocation(anchor, Gravity.TOP or Gravity.START, x, y)
-        anchor.postDelayed({
-            pill.dismiss()
-            if (activeAccentPill == pill) activeAccentPill = null
-        }, 1500)
-    }
-
-    private fun addThemeDivider(modes: FrameLayout, boundary: Int, selected: Int) {
-        if (selected == boundary - 1 || selected == boundary) return
-        val divider = View(this).apply {
-            setBackgroundColor(ThemePrefs.tint(color(R.color.istan_outline),
-                color(R.color.istan_surface_high), 0.82f))
-        }
-        val dividerLp = FrameLayout.LayoutParams(dp(1), dp(20)).apply {
-            gravity = Gravity.CENTER_VERTICAL or Gravity.START
-            leftMargin = dp(68 * boundary)
-        }
-        modes.addView(divider, dividerLp)
-    }
-
-    private fun addThemeModeButton(
-        group: MaterialButtonToggleGroup,
-        label: String,
-        option: Int,
-        selected: Int
-    ): MaterialButton {
-        val isSelected = option == selected
-        return MaterialButton(this).apply {
-            id = View.generateViewId()
-            tag = option
-            text = label
-            textSize = 15f
-            typeface = AppFont.semiBold
-            textAlignment = View.TEXT_ALIGNMENT_CENTER
-            gravity = Gravity.CENTER
-            isAllCaps = false
-            isCheckable = true
-            contentDescription = label + " theme" + if (isSelected) ", selected" else ""
-            setTextColor(ColorStateList(
-                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-                intArrayOf(if (ThemePrefs.isAmoled(this@SettingsActivity)) Color.BLACK else Color.WHITE, color(R.color.istan_text_muted))))
-            backgroundTintList = ColorStateList(
-                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-                intArrayOf(color(R.color.istan_olive), Color.TRANSPARENT))
-            strokeWidth = 0
-            setInsetTop(dp(4))
-            setInsetBottom(dp(4))
-            cornerRadius = dp(18)
-            minWidth = 0
-            minHeight = 0
-            minimumHeight = 0
-            setPadding(0, 0, 0, 0)
-            group.addView(this, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f))
-        }
-    }
-
     private fun developerFooter(): View {
         val footer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
         val credit = TextView(this).apply {
             text = "Dev By\nRamakanth"
             textSize = 38f
-            setTextColor(if (ThemePrefs.isAmoled(this@SettingsActivity)) 0xFFCAC4D0.toInt() else 0xFF1C1B1F.toInt())
+            setTextColor(color(R.color.istan_text))
             typeface = AppFont.semiBold
             gravity = Gravity.START
             includeFontPadding = false
@@ -634,9 +399,8 @@ class SettingsActivity : AppCompatActivity() {
         val attribution = SpannableString(crafted + heart + location)
         val locationStart = crafted.length + heart.length
         attribution.setSpan(AssetTypefaceSpan(AppFont.regular), 0, locationStart, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        attribution.setSpan(ForegroundColorSpan(ThemePrefs.tint(color(R.color.istan_text_muted),
-            color(R.color.istan_background), 0.26f)), 0, locationStart, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        attribution.setSpan(ForegroundColorSpan(if (ThemePrefs.isAmoled(this)) 0xFFCAC4D0.toInt() else 0xFF1C1B1F.toInt()),
+        attribution.setSpan(ForegroundColorSpan(color(R.color.istan_text_muted)), 0, locationStart, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        attribution.setSpan(ForegroundColorSpan(color(R.color.istan_text)),
             locationStart, attribution.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         attribution.setSpan(AssetTypefaceSpan(AppFont.semiBold), locationStart, attribution.length,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -663,13 +427,6 @@ class SettingsActivity : AppCompatActivity() {
         override fun updateMeasureState(paint: TextPaint) { paint.typeface = typeface }
     }
 
-    private fun roundedBackground(color: Int, radius: Int, strokeWidth: Int): GradientDrawable =
-        GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = radius.toFloat()
-            if (strokeWidth > 0) setStroke(strokeWidth, color(R.color.istan_outline))
-        }
-
     private fun text(value: String, sp: Int, colorRes: Int, bold: Boolean): TextView =
         TextView(this).apply {
             text = value
@@ -688,7 +445,7 @@ class SettingsActivity : AppCompatActivity() {
             window.isNavigationBarContrastEnforced = false
         }
         val controller = WindowCompat.getInsetsController(window, window.decorView)
-        val lightBars = !ThemePrefs.isAmoled(this)
+        val lightBars = !ThemePrefs.isDark(this)
         controller.isAppearanceLightStatusBars = lightBars
         controller.isAppearanceLightNavigationBars = lightBars
     }
@@ -697,7 +454,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun tintEditText(editText: EditText, accentColor: Int) {
         val tint = ColorStateList.valueOf(accentColor)
-        editText.highlightColor = ThemePrefs.tint(accentColor, color(R.color.istan_background), 0.5f)
+        editText.highlightColor = Color.argb(76, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             editText.textCursorDrawable?.mutate()?.also {
                 it.setTint(accentColor)
@@ -738,5 +495,9 @@ class SettingsActivity : AppCompatActivity() {
                 }
             } catch (_: Exception) {}
         }
+    }
+
+    private companion object {
+        val THEME_LABELS = listOf("System default", "Light", "Dark")
     }
 }

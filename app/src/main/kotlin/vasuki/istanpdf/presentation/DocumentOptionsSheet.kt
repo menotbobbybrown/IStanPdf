@@ -10,7 +10,6 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.card.MaterialCardView
 import vasuki.istanpdf.AppFont
 import vasuki.istanpdf.R
@@ -34,7 +33,7 @@ class DocumentOptionsSheet(
     private var activeDropdown: RoundedDropdown? = null
 
     fun show() {
-        val dialog = BottomSheetDialog(activity)
+        val dialog = BottomSheetStyle.dialog(activity)
         val scroll = ScrollView(activity)
         scroll.isFillViewport = true
         val root = LinearLayout(activity).apply {
@@ -155,11 +154,9 @@ class DocumentOptionsSheet(
         }
         dialog.setContentView(scroll)
         dialog.show()
-        val sheet = dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
-        sheet?.let {
-            BottomSheetStyle.apply(activity, dialog, it)
-            BottomSheetBehavior.from(it).state = BottomSheetBehavior.STATE_EXPANDED
-        }
+        val sheet = dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet) ?: return
+        BottomSheetStyle.apply(activity, dialog, sheet)
+        BottomSheetBehavior.from(sheet).state = BottomSheetBehavior.STATE_EXPANDED
     }
 
     private fun addSettingRow(
@@ -188,12 +185,8 @@ class DocumentOptionsSheet(
         row.addView(labelView, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
 
         val pill = MaterialCardView(activity).apply {
-            radius = dp(20).toFloat()
-            cardElevation = 0f
-            strokeWidth = dp(1)
-            strokeColor = color(R.color.istan_outline)
-            setCardBackgroundColor(color(R.color.istan_surface))
-            minimumHeight = dp(40)
+            ShadcnDrawables.applyButton(this, ShadcnDrawables.ButtonVariant.OUTLINE, ShadcnDrawables.BUTTON_RADIUS)
+            minimumHeight = dp(48)
             minimumWidth = dp(96)
             isClickable = true
             isFocusable = true
@@ -204,11 +197,11 @@ class DocumentOptionsSheet(
             text = "$value \u25BE"
             textSize = 14f
             typeface = AppFont.medium
-            setTextColor(color(R.color.istan_text))
+            setTextColor(ShadcnDrawables.text(activity))
             gravity = Gravity.CENTER
             includeFontPadding = false
             maxLines = 1
-            setPadding(dp(16), dp(8), dp(16), dp(8))
+            setPadding(dp(16), dp(12), dp(16), dp(12))
         }
         pill.addView(
             valueView,

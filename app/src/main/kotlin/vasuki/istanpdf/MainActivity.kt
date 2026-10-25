@@ -46,6 +46,7 @@ import vasuki.istanpdf.presentation.CropOverlayView
 import vasuki.istanpdf.presentation.EditorViewBuilder
 import vasuki.istanpdf.presentation.EditorViewModel
 import vasuki.istanpdf.presentation.HomeViewBuilder
+import vasuki.istanpdf.presentation.ShadcnDrawables
 import vasuki.istanpdf.util.BitmapUtils
 import vasuki.istanpdf.util.ContentFiles
 import vasuki.istanpdf.libreoffice.LibreOfficeDownloader
@@ -132,7 +133,6 @@ class MainActivity : AppCompatActivity() {
 
         pruneStaleCacheFiles()
         themeToken = ThemePrefs.token(this)
-        ThemePrefs.ensureLauncherIcon(this)
         buildHome()
         
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
@@ -157,11 +157,7 @@ class MainActivity : AppCompatActivity() {
 
         val dialogRoot = LinearLayout(this)
         dialogRoot.orientation = LinearLayout.VERTICAL
-        val gd = android.graphics.drawable.GradientDrawable()
-        gd.setColor(color(R.color.istan_surface))
-        gd.cornerRadius = dp(28).toFloat()
-        gd.setStroke(dp(1), color(R.color.istan_outline))
-        dialogRoot.background = gd
+        dialogRoot.background = ShadcnDrawables.card(this, ShadcnDrawables.DIALOG_RADIUS)
         dialogRoot.setPadding(dp(24), dp(24), dp(24), dp(24))
 
         val title = text("Sponsor this project", 22, R.color.istan_text, true)
@@ -191,13 +187,15 @@ class MainActivity : AppCompatActivity() {
 
         dialogRoot.addView(checkRow)
 
-        val btnSponsor = text("💖 Sponsor on GitHub", 16, android.R.color.white, true)
+        val btnSponsor = text("💖 Sponsor on GitHub", 16, R.color.istan_text, true)
         btnSponsor.gravity = Gravity.CENTER
+        btnSponsor.setTextColor(ShadcnDrawables.primaryForeground(this))
         val btnGd = android.graphics.drawable.GradientDrawable()
         btnGd.setColor(color(R.color.istan_olive))
-        btnGd.cornerRadius = dp(100).toFloat()
+        btnGd.cornerRadius = dp(ShadcnDrawables.BUTTON_RADIUS).toFloat()
         btnSponsor.background = btnGd
-        btnSponsor.setPadding(0, dp(16), 0, dp(16))
+        btnSponsor.minimumHeight = dp(48)
+        btnSponsor.setPadding(0, dp(14), 0, dp(14))
         val btnParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         btnParams.bottomMargin = dp(12)
         btnSponsor.layoutParams = btnParams
@@ -1158,7 +1156,7 @@ class MainActivity : AppCompatActivity() {
     private data class BottomSheetItem(val label: String, val iconRes: Int, val action: Runnable, val tintIcon: Boolean = true, val customIcon: View? = null, val iconWidthDp: Int = 24, val iconHeightDp: Int = 24)
 
     private fun showBottomSheetMenu(titleStr: String, items: List<BottomSheetItem>) {
-        val bottomSheetDialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        val bottomSheetDialog = BottomSheetStyle.dialog(this)
         
         val dialogRoot = LinearLayout(this)
         dialogRoot.orientation = LinearLayout.VERTICAL
@@ -1367,7 +1365,7 @@ class MainActivity : AppCompatActivity() {
 
         val pillBg = android.graphics.drawable.GradientDrawable()
         pillBg.setColor(Color.parseColor("#22FFFFFF"))
-        pillBg.cornerRadius = dp(32).toFloat()
+        pillBg.cornerRadius = dp(ShadcnDrawables.BUTTON_RADIUS).toFloat()
         val controlsPill = LinearLayout(this)
         controlsPill.orientation = LinearLayout.HORIZONTAL
         controlsPill.gravity = Gravity.CENTER_VERTICAL
@@ -1985,11 +1983,7 @@ class MainActivity : AppCompatActivity() {
 
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
-        val bg = android.graphics.drawable.GradientDrawable()
-        bg.setColor(color(R.color.istan_surface))
-        bg.cornerRadius = dp(28).toFloat()
-        bg.setStroke(dp(1), color(R.color.istan_outline))
-        root.background = bg
+        root.background = ShadcnDrawables.card(this, ShadcnDrawables.DIALOG_RADIUS)
         root.setPadding(dp(24), dp(24), dp(24), dp(24))
 
         val titleView = text("Downloading Engine", 20, R.color.istan_text, true)
@@ -2085,11 +2079,7 @@ class MainActivity : AppCompatActivity() {
 
         val dialogRoot = LinearLayout(this)
         dialogRoot.orientation = LinearLayout.VERTICAL
-        val gd = android.graphics.drawable.GradientDrawable()
-        gd.setColor(color(R.color.istan_surface))
-        gd.cornerRadius = dp(28).toFloat()
-        gd.setStroke(dp(1), color(R.color.istan_outline))
-        dialogRoot.background = gd
+        dialogRoot.background = ShadcnDrawables.card(this, ShadcnDrawables.DIALOG_RADIUS)
         dialogRoot.setPadding(dp(24), dp(24), dp(24), dp(24))
 
         val title = text(titleStr, 20, R.color.istan_text, true)
@@ -2160,19 +2150,13 @@ class MainActivity : AppCompatActivity() {
     private fun showOutputSnackbar(output: OutputRef) {
         val show = Runnable {
             val root = findViewById<View>(android.R.id.content) ?: return@Runnable
-            val accent = ThemePrefs.accent(this)
-            val amoled = ThemePrefs.isAmoled(this)
             val snackbar = Snackbar.make(root, "File saved successfully", Snackbar.LENGTH_LONG)
             snackbar.duration = 4500
-            val background = android.graphics.drawable.GradientDrawable()
-            background.setColor(color(R.color.istan_surface))
-            background.cornerRadius = dp(8).toFloat()
-            background.setStroke(dp(1), color(R.color.istan_outline))
-            snackbar.view.background = background
+            snackbar.view.background = ShadcnDrawables.card(this, ShadcnDrawables.BUTTON_RADIUS)
             snackbar.view.backgroundTintList = null
-            snackbar.view.elevation = dp(8).toFloat()
+            snackbar.view.elevation = 0f
             snackbar.setTextColor(color(R.color.istan_text))
-            snackbar.setActionTextColor(ThemePrefs.accentForeground(accent, amoled))
+            snackbar.setActionTextColor(color(R.color.istan_olive))
             val textView = snackbar.view.findViewById<TextView>(com.google.android.material.R.id.snackbar_text)
             textView?.apply {
                 typeface = AppFont.regular
@@ -2302,11 +2286,7 @@ class MainActivity : AppCompatActivity() {
         panel.orientation = LinearLayout.VERTICAL
         panel.gravity = Gravity.CENTER_HORIZONTAL
         panel.setPadding(dp(24), dp(24), dp(24), dp(20))
-        val panelBg = android.graphics.drawable.GradientDrawable()
-        panelBg.setColor(color(R.color.istan_surface))
-        panelBg.cornerRadius = dp(28).toFloat()
-        panelBg.setStroke(dp(1), color(R.color.istan_outline))
-        panel.background = panelBg
+        panel.background = ShadcnDrawables.card(this, ShadcnDrawables.DIALOG_RADIUS)
 
         loadingMessage = text(WAITING_TEXT, 18, R.color.istan_text, true)
         loadingMessage!!.gravity = Gravity.CENTER
@@ -2348,15 +2328,11 @@ class MainActivity : AppCompatActivity() {
         panel.addView(textRow, textRowParams)
 
         val cancelBtn = MaterialCardView(this)
-        cancelBtn.setCardBackgroundColor(Color.TRANSPARENT)
-        cancelBtn.radius = dp(100).toFloat()
-        cancelBtn.strokeWidth = dp(1)
-        cancelBtn.strokeColor = color(R.color.istan_outline)
-        cancelBtn.cardElevation = 0f
-        cancelBtn.useCompatPadding = false
+        ShadcnDrawables.applyButton(cancelBtn, ShadcnDrawables.ButtonVariant.OUTLINE, ShadcnDrawables.BUTTON_RADIUS)
+        cancelBtn.minimumHeight = dp(48)
 
-        val cancelText = text("Cancel", 15, R.color.istan_text_muted, false)
-        cancelText.setPadding(dp(24), dp(10), dp(24), dp(10))
+        val cancelText = text("Cancel", 15, R.color.istan_text, false)
+        cancelText.setPadding(dp(24), dp(12), dp(24), dp(12))
         cancelBtn.addView(cancelText)
 
         cancelBtn.setOnClickListener {
@@ -2483,7 +2459,7 @@ class MainActivity : AppCompatActivity() {
             window.isNavigationBarContrastEnforced = false
         }
         val controller = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
-        val lightBars = !ThemePrefs.isAmoled(this)
+        val lightBars = !ThemePrefs.isDark(this)
         controller.isAppearanceLightStatusBars = lightBars
         controller.isAppearanceLightNavigationBars = lightBars
     }
@@ -2509,11 +2485,7 @@ class MainActivity : AppCompatActivity() {
         val dialogRef = arrayOfNulls<android.app.Dialog>(1)
 
         val card1 = MaterialCardView(this)
-        card1.setCardBackgroundColor(android.graphics.Color.TRANSPARENT)
-        card1.radius = dp(16).toFloat()
-        card1.strokeWidth = dp(1)
-        card1.strokeColor = color(R.color.istan_outline)
-        card1.cardElevation = 0f
+        ShadcnDrawables.applyButton(card1, ShadcnDrawables.ButtonVariant.OUTLINE, ShadcnDrawables.BUTTON_RADIUS)
         card1.setOnClickListener {
             dialogRef[0]?.dismiss()
             compressMode = COMPRESS_MODE_RESOLUTION
@@ -2529,11 +2501,7 @@ class MainActivity : AppCompatActivity() {
         content.addView(card1, lp1)
 
         val card2 = MaterialCardView(this)
-        card2.setCardBackgroundColor(android.graphics.Color.TRANSPARENT)
-        card2.radius = dp(16).toFloat()
-        card2.strokeWidth = dp(1)
-        card2.strokeColor = color(R.color.istan_outline)
-        card2.cardElevation = 0f
+        ShadcnDrawables.applyButton(card2, ShadcnDrawables.ButtonVariant.OUTLINE, ShadcnDrawables.BUTTON_RADIUS)
         card2.setOnClickListener {
             dialogRef[0]?.dismiss()
             compressMode = COMPRESS_MODE_SIZE
@@ -2564,11 +2532,7 @@ class MainActivity : AppCompatActivity() {
 
         for ((index, preset) in presets.withIndex()) {
             val card = MaterialCardView(this)
-            card.setCardBackgroundColor(android.graphics.Color.TRANSPARENT)
-            card.radius = dp(16).toFloat()
-            card.strokeWidth = dp(1)
-            card.strokeColor = color(R.color.istan_outline)
-            card.cardElevation = 0f
+            ShadcnDrawables.applyButton(card, ShadcnDrawables.ButtonVariant.OUTLINE, ShadcnDrawables.BUTTON_RADIUS)
             card.setOnClickListener {
                 dialogRef[0]?.dismiss()
                 compressDpi = preset.second
@@ -2602,11 +2566,7 @@ class MainActivity : AppCompatActivity() {
 
         for ((index, option) in options.withIndex()) {
             val card = MaterialCardView(this)
-            card.setCardBackgroundColor(android.graphics.Color.TRANSPARENT)
-            card.radius = dp(16).toFloat()
-            card.strokeWidth = dp(1)
-            card.strokeColor = color(R.color.istan_outline)
-            card.cardElevation = 0f
+            ShadcnDrawables.applyButton(card, ShadcnDrawables.ButtonVariant.OUTLINE, ShadcnDrawables.BUTTON_RADIUS)
             card.setOnClickListener {
                 dialogRef[0]?.dismiss()
                 pdfToImageDpi = option.second
@@ -2657,10 +2617,7 @@ class MainActivity : AppCompatActivity() {
         input.setTextColor(color(R.color.istan_text))
         input.setHintTextColor(color(R.color.istan_text_muted))
         input.setPadding(dp(16), dp(12), dp(16), dp(12))
-        val inputBg = android.graphics.drawable.GradientDrawable()
-        inputBg.cornerRadius = dp(12).toFloat()
-        inputBg.setStroke(dp(1), color(R.color.istan_outline))
-        input.background = inputBg
+        input.background = ShadcnDrawables.input(this, ShadcnDrawables.BUTTON_RADIUS)
         content.addView(input, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ))
