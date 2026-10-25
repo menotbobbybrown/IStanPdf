@@ -505,14 +505,14 @@ class EditorViewBuilder(
 
                 val dragHandle = ImageView(activity)
                 dragHandle.setImageResource(R.drawable.drag_indicator_24px)
-                dragHandle.setColorFilter(color(R.color.istan_olive))
+                dragHandle.setColorFilter(color(R.color.istan_text_muted))
                 dragHandle.contentDescription = "Reorder page"
                 dragHandle.setPadding(dp(12), dp(12), dp(12), dp(12))
                 if (hideDrag) dragHandle.visibility = View.GONE
                 row.addView(dragHandle, LinearLayout.LayoutParams(dp(48), dp(48)))
 
                 val preview = ImageView(activity)
-                preview.setBackgroundColor(Color.WHITE)
+                preview.setBackgroundColor(color(R.color.istan_placeholder))
                 preview.scaleType = ImageView.ScaleType.FIT_CENTER
                 preview.adjustViewBounds = true
 
@@ -574,7 +574,7 @@ class EditorViewBuilder(
                         intArrayOf(android.R.attr.state_checked)
                     ),
                     intArrayOf(
-                        color(R.color.istan_outline),
+                        color(R.color.istan_outline_emphasis),
                         color(R.color.istan_olive)
                     )
                 )
@@ -586,7 +586,7 @@ class EditorViewBuilder(
                 if (isMerge) {
                     crossBtn = ImageView(activity)
                     crossBtn.setImageResource(R.drawable.close_24px)
-                    crossBtn.setColorFilter(color(R.color.istan_olive))
+                    crossBtn.setColorFilter(color(R.color.istan_destructive))
                     crossBtn.contentDescription = "Remove page"
                     crossBtn.setPadding(dp(8), dp(8), dp(8), dp(8))
                     addAction(crossBtn, 40)
@@ -610,7 +610,7 @@ class EditorViewBuilder(
                 card.addView(row)
 
                 val preview = ImageView(activity)
-                preview.setBackgroundColor(Color.WHITE)
+                preview.setBackgroundColor(color(R.color.istan_placeholder))
                 preview.scaleType = ImageView.ScaleType.FIT_CENTER
                 preview.adjustViewBounds = true
                 preview.maxHeight = dp(560)
@@ -644,7 +644,7 @@ class EditorViewBuilder(
                         intArrayOf(android.R.attr.state_checked)
                     ),
                     intArrayOf(
-                        color(R.color.istan_outline),
+                        color(R.color.istan_outline_emphasis),
                         color(R.color.istan_olive)
                     )
                 )
@@ -768,13 +768,14 @@ class EditorViewBuilder(
         private fun showPreviewDialog(startPosition: Int) {
             val dialog = android.app.Dialog(activity, android.R.style.Theme_Translucent_NoTitleBar)
             dialog.window!!.addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-            dialog.window!!.statusBarColor = Color.parseColor("#E6252525")
-            dialog.window!!.navigationBarColor = Color.parseColor("#E6252525")
+            val immersiveScrim = color(R.color.istan_scrim_immersive)
+            dialog.window!!.statusBarColor = immersiveScrim
+            dialog.window!!.navigationBarColor = immersiveScrim
             dialog.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
             val dialogRoot = LinearLayout(activity)
             dialogRoot.orientation = LinearLayout.VERTICAL
-            dialogRoot.setBackgroundColor(Color.parseColor("#E6252525"))
+            dialogRoot.setBackgroundColor(immersiveScrim)
 
             val topBar = FrameLayout(activity)
             val closeBtn = ImageView(activity)
@@ -803,7 +804,7 @@ class EditorViewBuilder(
             bottomBar.addView(pageCounter, pcLp)
 
             val pillBg = GradientDrawable()
-            pillBg.setColor(Color.parseColor("#22FFFFFF"))
+            pillBg.setColor(color(R.color.istan_glass))
             pillBg.cornerRadius = dp(ShadcnDrawables.BUTTON_RADIUS).toFloat()
             val controlsPill = LinearLayout(activity)
             controlsPill.orientation = LinearLayout.HORIZONTAL
@@ -844,7 +845,7 @@ class EditorViewBuilder(
 
             val cbColors = android.content.res.ColorStateList(
                 arrayOf(intArrayOf(-android.R.attr.state_checked), intArrayOf(android.R.attr.state_checked)),
-                intArrayOf(Color.parseColor("#888888"), color(R.color.istan_olive))
+                intArrayOf(color(R.color.istan_outline_emphasis), color(R.color.istan_olive))
             )
             val keepBox = CheckBox(activity)
             keepBox.buttonTintList = cbColors

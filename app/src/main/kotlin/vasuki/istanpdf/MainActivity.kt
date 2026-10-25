@@ -477,7 +477,7 @@ class MainActivity : AppCompatActivity() {
                 status?.text = "${emptyFiles}Empty PDF skipped."
             }
 
-            setStatusIndicatorColor(color(R.color.istan_olive))
+            applyStatusTone(false)
             status?.text = "Loading PDFs..."
             worker.execute {
                 val rendered = mutableListOf<PageItem>()
@@ -578,7 +578,7 @@ class MainActivity : AppCompatActivity() {
             }
             if (validUris.isEmpty()) return
 
-            setStatusIndicatorColor(color(R.color.istan_olive))
+            applyStatusTone(false)
             status?.text = "Loading PDFs..."
             showStatusCard(false)
             worker.execute {
@@ -1334,13 +1334,14 @@ class MainActivity : AppCompatActivity() {
     private fun showCropUi(title: String, bmp: Bitmap, retakeAction: (() -> Unit)?, onAdd: (Bitmap) -> Unit) {
         val dialog = android.app.Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
         dialog.window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-        dialog.window?.statusBarColor = Color.parseColor("#E6252525")
-        dialog.window?.navigationBarColor = Color.parseColor("#E6252525")
+        val immersiveScrim = color(R.color.istan_scrim_immersive)
+        dialog.window?.statusBarColor = immersiveScrim
+        dialog.window?.navigationBarColor = immersiveScrim
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
 
         val dialogRoot = LinearLayout(this)
         dialogRoot.orientation = LinearLayout.VERTICAL
-        dialogRoot.setBackgroundColor(Color.parseColor("#E6252525"))
+        dialogRoot.setBackgroundColor(immersiveScrim)
 
         val topBar = FrameLayout(this)
         val closeBtn = ImageView(this)
@@ -1364,7 +1365,7 @@ class MainActivity : AppCompatActivity() {
         this.cropView = cropView
 
         val pillBg = android.graphics.drawable.GradientDrawable()
-        pillBg.setColor(Color.parseColor("#22FFFFFF"))
+        pillBg.setColor(color(R.color.istan_glass))
         pillBg.cornerRadius = dp(ShadcnDrawables.BUTTON_RADIUS).toFloat()
         val controlsPill = LinearLayout(this)
         controlsPill.orientation = LinearLayout.HORIZONTAL
@@ -2223,6 +2224,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun applyStatusTone(isError: Boolean) {
+        val tone = color(if (isError) R.color.istan_destructive else R.color.istan_olive)
+        setStatusIndicatorColor(tone)
+        status?.setTextColor(tone)
+    }
+
     private fun showError(exception: Exception) {
         if (exception is InterruptedException || "Cancelled by user" == exception.message) {
             runOnUiThread { setBusy(false, WAITING_TEXT) }
@@ -2240,7 +2247,7 @@ class MainActivity : AppCompatActivity() {
             val message = exception.message ?: exception.javaClass.simpleName
             if (status != null) {
                 statusCard?.visibility = View.VISIBLE
-                setStatusIndicatorColor(Color.RED)
+                applyStatusTone(true)
                 status!!.text = message
             }
             Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
@@ -2277,7 +2284,7 @@ class MainActivity : AppCompatActivity() {
         rootFrame.addView(view, FrameLayout.LayoutParams(-1, -1))
 
         loadingOverlay = FrameLayout(this)
-        loadingOverlay!!.setBackgroundColor(Color.argb(178, 18, 18, 18))
+        loadingOverlay!!.setBackgroundColor(color(R.color.istan_scrim_sheet))
         loadingOverlay!!.isClickable = true
         loadingOverlay!!.isFocusable = true
         loadingOverlay!!.visibility = View.GONE
@@ -2398,7 +2405,7 @@ class MainActivity : AppCompatActivity() {
             status?.let {
                 it.animate().cancel()
                 it.alpha = 1f
-                setStatusIndicatorColor(color(R.color.istan_olive))
+                applyStatusTone(false)
                 it.text = message
             }
             pageList?.suppressLayout(true)
@@ -2415,7 +2422,7 @@ class MainActivity : AppCompatActivity() {
                     status?.let {
                         it.animate().cancel()
                         it.alpha = 1f
-                        setStatusIndicatorColor(color(R.color.istan_olive))
+                        applyStatusTone(false)
                         it.text = message
                     }
                     pageList?.suppressLayout(false)

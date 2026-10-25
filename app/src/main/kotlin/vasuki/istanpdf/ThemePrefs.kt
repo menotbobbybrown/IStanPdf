@@ -15,14 +15,6 @@ object ThemePrefs {
     const val THEME_LIGHT = 1
     const val THEME_DARK = 2
 
-    enum class TypeScale(val sp: Float, val isBold: Boolean, val letterSpacing: Float = 0f, val isAllCaps: Boolean = false) {
-        HEADLINE(32f, true, -0.02f, false),
-        TITLE(22f, true, 0f, false),
-        BODY(16f, false, 0f, false),
-        LABEL(14f, true, 0f, false),
-        CAPTION(12f, false, 0.04f, true)
-    }
-
     fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -67,6 +59,12 @@ object ThemePrefs {
             R.color.istan_outline -> if (dark) Color.parseColor("#27272A") else Color.parseColor("#E4E4E7")
             R.color.istan_text -> if (dark) Color.parseColor("#FAFAFA") else Color.parseColor("#09090B")
             R.color.istan_text_muted -> if (dark) Color.parseColor("#A1A1AA") else Color.parseColor("#52525B")
+            R.color.istan_outline_emphasis -> if (dark) Color.parseColor("#A1A1AA") else Color.parseColor("#71717A")
+            R.color.istan_destructive -> if (dark) Color.parseColor("#F87171") else Color.parseColor("#DC2626")
+            R.color.istan_scrim_sheet -> if (dark) Color.argb(178, 18, 18, 18) else Color.argb(82, 0, 0, 0)
+            R.color.istan_scrim_immersive -> Color.parseColor("#E6252525")
+            R.color.istan_glass -> Color.parseColor("#29FFFFFF")
+            R.color.istan_placeholder -> if (dark) Color.parseColor("#1C1C1F") else Color.parseColor("#F4F4F5")
             else -> context.getColor(colorRes)
         }
     }

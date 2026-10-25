@@ -31,8 +31,9 @@ object ShadcnDrawables {
     fun thumbnailFrame(context: Context, radiusDp: Int = 6): GradientDrawable {
         val background = GradientDrawable()
         background.shape = GradientDrawable.RECTANGLE
-        background.setColor(resolve(context, R.color.istan_outline))
+        background.setColor(resolve(context, R.color.istan_placeholder))
         background.cornerRadius = dp(context, radiusDp).toFloat()
+        background.setStroke(dp(context, 1), resolve(context, R.color.istan_outline))
         return background
     }
 
@@ -41,7 +42,7 @@ object ShadcnDrawables {
         background.shape = GradientDrawable.RECTANGLE
         background.setColor(resolve(context, R.color.istan_surface))
         background.cornerRadius = dp(context, radiusDp).toFloat()
-        background.setStroke(dp(context, 1), resolve(context, R.color.istan_outline), dp(context, 4).toFloat(), dp(context, 4).toFloat())
+        background.setStroke(dp(context, 1), resolve(context, R.color.istan_outline_emphasis), dp(context, 4).toFloat(), dp(context, 4).toFloat())
         return background
     }
 
