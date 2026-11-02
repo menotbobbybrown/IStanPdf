@@ -19,3 +19,6 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+-dontwarn com.itextpdf.bouncycastle.BouncyCastleFactory
+-dontwarn com.itextpdf.bouncycastlefips.BouncyCastleFipsFactory
+-dontwarn org.slf4j.impl.StaticLoggerBinder
